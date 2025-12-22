@@ -10,13 +10,6 @@ import os
 import tempfile
 import traceback
 
-# Try to import optional dependencies
-try:
-    import pyperclip
-    HAS_PYPERCLIP = True
-except ImportError:
-    HAS_PYPERCLIP = False
-
 bl_info = {
     "name": "Node to Mermaid Converter",
     "author": "blender-nodes-to-mermaid contributors",
@@ -27,6 +20,14 @@ bl_info = {
     "category": "Node",
 }
 
+# Try to import optional dependencies
+try:
+    import pyperclip
+    print(f"[{bl_info['name']}] Optional dependency 'pyperclip' found. Clipboard functionality enabled.")
+    HAS_PYPERCLIP = True
+except ImportError:
+    print(f"[{bl_info['name']}] Optional dependency 'pyperclip' not found. Clipboard functionality will be disabled.")
+    HAS_PYPERCLIP = False
 
 def sanitize_id(name, prefix=''):
     """Sanitize node name to create a valid Mermaid ID."""
