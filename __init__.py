@@ -13,10 +13,10 @@ import traceback
 bl_info = {
     "name": "Node to Mermaid Converter",
     "author": "blender-nodes-to-mermaid contributors",
-    "version": (1, 0, 0),
-    "blender": (4, 0, 0),
+    "version": (1, 1, 0),
+    "blender": (5, 0, 0),
     "location": "Node Editor > Sidebar > Mermaid",
-    "description": "Export node trees to Mermaid diagram format",
+    "description": "Export node trees to Mermaid diagram format with parameters",
     "category": "Node",
 }
 
@@ -41,7 +41,118 @@ def sanitize_id(name, prefix=''):
     return prefix + sanitized
 
 
-def build_mermaid(node_tree, prefix='', indent=0):
+def get_node_parameters(node):
+    """
+    Extract important parameters from a node for documentation.
+    
+    Args:
+        node: The Blender node to extract parameters from
+        
+    Returns:
+        Dictionary of parameter names and values
+    """
+    params = {}
+    
+    # Common properties to skip (internal or not useful for sharing)
+    skip_props = {
+        'rna_type', 'name', 'label', 'location', 'width', 'height', 'dimensions',
+        'select', 'show_options', 'show_preview', 'show_texture', 'hide',
+        'mute', 'parent', 'use_custom_color', 'color', 'inputs', 'outputs',
+        'internal_links', 'type', 'bl_idname', 'bl_label', 'bl_rna',
+        'bl_description', 'bl_icon', 'bl_static_type', 'bl_width_default',
+        'bl_width_max', 'bl_width_min', 'bl_height_default', 'bl_height_max',
+        'bl_height_min', 'shading_compatibility', 'width_hidden'
+    }
+    
+    # Try to get all properties
+    try:
+        for prop_name in dir(node):
+            # Skip private and magic methods
+            if prop_name.startswith('_'):
+                continue
+            # Skip methods
+            if callable(getattr(node, prop_name, None)):
+                continue
+            # Skip properties in skip list
+            if prop_name in skip_props:
+                continue
+                
+            try:
+                value = getattr(node, prop_name)
+                
+                # Skip None values and complex objects
+                if value is None:
+                    continue
+                    
+                # Handle different value types
+                if isinstance(value, (int, float, str, bool)):
+                    params[prop_name] = value
+                elif isinstance(value, (tuple, list)) and len(value) <= 4:
+                    # Include small tuples/lists (like color, vector)
+                    if all(isinstance(v, (int, float)) for v in value):
+                        params[prop_name] = value
+                elif hasattr(value, 'name'):
+                    # For objects with name attribute (like materials, images, etc.)
+                    params[prop_name] = value.name
+                    
+            except (AttributeError, TypeError):
+                # Skip properties that can't be accessed
+                continue
+                
+    except Exception as e:
+        # If something goes wrong, just return what we have
+        print(f"Warning: Could not extract all parameters from node: {e}")
+    
+    return params
+
+
+def format_node_label(node, node_type):
+    """
+    Format a node label with its type and important parameters.
+    
+    Args:
+        node: The Blender node
+        node_type: The simplified node type name
+        
+    Returns:
+        Formatted label string
+    """
+    # Start with basic node info
+    label_parts = [f"{node.name} ({node_type})"]
+    
+    # Get node parameters
+    params = get_node_parameters(node)
+    
+    # Format parameters for display (limit to most important ones)
+    if params:
+        param_lines = []
+        # Limit to 5 most important parameters to avoid overly long labels
+        important_params = list(params.items())[:5]
+        
+        for key, value in important_params:
+            # Format the value based on type
+            if isinstance(value, float):
+                # Round floats to 3 decimal places
+                value_str = f"{value:.3f}"
+            elif isinstance(value, (tuple, list)):
+                # Format tuples/lists nicely
+                formatted_values = [f"{v:.3f}" if isinstance(v, float) else str(v) for v in value]
+                value_str = f"({', '.join(formatted_values)})"
+            else:
+                value_str = str(value)
+            
+            param_lines.append(f"{key}: {value_str}")
+        
+        if param_lines:
+            # Add parameters to label
+            label_parts.append("---")
+            label_parts.extend(param_lines)
+    
+    # Join all parts with newline (Mermaid supports multiline labels)
+    return "\\n".join(label_parts)
+
+
+def build_mermaid(node_tree, prefix='', indent=0, include_parameters=True):
     """
     Recursively build Mermaid code from a node tree.
     
@@ -49,6 +160,7 @@ def build_mermaid(node_tree, prefix='', indent=0):
         node_tree: The Blender node tree to convert
         prefix: Prefix for node IDs (used in subgraphs)
         indent: Current indentation level
+        include_parameters: Whether to include node parameters in labels
         
     Returns:
         String containing Mermaid diagram code
@@ -84,8 +196,12 @@ def build_mermaid(node_tree, prefix='', indent=0):
                 node_type = node_type[len(prefix_to_remove):]
                 break
         
-        # Create node definition
-        node_label = f"{node.name} ({node_type})"
+        # Create node definition with parameters if requested
+        if include_parameters:
+            node_label = format_node_label(node, node_type)
+        else:
+            node_label = f"{node.name} ({node_type})"
+        
         mermaid_lines.append(f"{indent_str}{node_id}[\"{node_label}\"]")
     
     # Second pass: Create links between nodes
@@ -141,7 +257,7 @@ def build_mermaid(node_tree, prefix='', indent=0):
             
             # Recursively process the group's node tree
             group_prefix = node_id + "_"
-            group_content = build_mermaid(node.node_tree, group_prefix, indent + 1)
+            group_content = build_mermaid(node.node_tree, group_prefix, indent + 1, include_parameters)
             mermaid_lines.append(group_content)
             
             mermaid_lines.append(f"{indent_str}end")
@@ -166,6 +282,12 @@ class NODE_OT_export_to_mermaid(bpy.types.Operator):
         name="Copy to Clipboard",
         description="Copy the Mermaid code to clipboard (requires pyperclip)",
         default=False
+    )
+    
+    include_parameters: bpy.props.BoolProperty(
+        name="Include Node Parameters",
+        description="Include node parameters and values in the diagram for complete documentation",
+        default=True
     )
     
     @classmethod
@@ -198,7 +320,7 @@ class NODE_OT_export_to_mermaid(bpy.types.Operator):
         
         # Build the Mermaid diagram
         try:
-            mermaid_code = "graph TD;\n" + build_mermaid(node_tree)
+            mermaid_code = "graph TD;\n" + build_mermaid(node_tree, include_parameters=self.include_parameters)
             
             # Print to console
             print("\n" + "="*50)
@@ -252,6 +374,7 @@ class NODE_OT_export_to_mermaid(bpy.types.Operator):
     def draw(self, context):
         """Draw the operator properties in the dialog."""
         layout = self.layout
+        layout.prop(self, "include_parameters")
         layout.prop(self, "export_to_file")
         layout.prop(self, "copy_to_clipboard")
 

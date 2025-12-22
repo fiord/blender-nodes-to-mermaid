@@ -1,13 +1,14 @@
 # Node to Mermaid Converter
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Blender](https://img.shields.io/badge/Blender-4.0%2B-orange.svg)](https://www.blender.org/)
+[![Blender](https://img.shields.io/badge/Blender-5.0%2B-orange.svg)](https://www.blender.org/)
 
 A Blender add-on that exports node trees to [Mermaid](https://mermaid.js.org/) diagram format for easy sharing, documentation, and visualization.
 
 ## Features
 
 - 🎨 **Export any node tree** to Mermaid diagram format
+- 📊 **Include node parameters** - Export with complete parameter information for full documentation
 - 🔄 **Supports all major node types**:
   - Shader Nodes
   - Compositor Nodes
@@ -18,6 +19,7 @@ A Blender add-on that exports node trees to [Mermaid](https://mermaid.js.org/) d
   - Save to `.mmd` file
   - Print to console
   - Copy to clipboard (optional)
+  - Toggle parameter inclusion
 - 🚀 **Zero external dependencies** - pure `bpy` implementation
 - 🎯 **Simple UI** integration in Node Editor sidebar
 
@@ -26,7 +28,7 @@ A Blender add-on that exports node trees to [Mermaid](https://mermaid.js.org/) d
 ### Method 1: Install from ZIP
 
 1. Download this repository as a ZIP file
-2. Open Blender (4.0 or later)
+2. Open Blender (5.0 or later)
 3. Go to `Edit` → `Preferences` → `Add-ons`
 4. Click `Install...` button
 5. Select the downloaded ZIP file
@@ -36,9 +38,9 @@ A Blender add-on that exports node trees to [Mermaid](https://mermaid.js.org/) d
 
 1. Clone or download this repository
 2. Copy the entire folder to your Blender addons directory:
-   - **Windows**: `%APPDATA%\Blender Foundation\Blender\4.x\scripts\addons\`
-   - **macOS**: `~/Library/Application Support/Blender/4.x/scripts/addons/`
-   - **Linux**: `~/.config/blender/4.x/scripts/addons/`
+   - **Windows**: `%APPDATA%\Blender Foundation\Blender\5.x\scripts\addons\`
+   - **macOS**: `~/Library/Application Support/Blender/5.x/scripts/addons/`
+   - **Linux**: `~/.config/blender/5.x/scripts/addons/`
 3. Restart Blender
 4. Enable the add-on in Preferences → Add-ons
 
@@ -52,9 +54,16 @@ A Blender add-on that exports node trees to [Mermaid](https://mermaid.js.org/) d
 4. Navigate to the **Mermaid** tab
 5. Click the **Export to Mermaid** button
 6. Configure export options in the dialog:
+   - ✅ **Include Node Parameters**: Include node parameters and values for complete documentation (recommended for sharing)
    - ✅ **Save to File**: Saves `.mmd` file next to your `.blend` file
    - ☐ **Copy to Clipboard**: Copies code to clipboard (requires `pyperclip`)
 7. Click **OK** to export
+
+### Export Options Explained
+
+- **Include Node Parameters**: When enabled, exports all important node parameters (values, settings, colors, etc.) needed to recreate the node setup. This is essential for sharing complete node graphs with others.
+- **Save to File**: Exports the diagram to a `.mmd` file in the same directory as your `.blend` file
+- **Copy to Clipboard**: Copies the Mermaid code to your system clipboard for quick pasting
 
 ### Output Example
 
@@ -141,7 +150,7 @@ graph TD;
 
 ## Requirements
 
-- **Blender**: 4.0 or later
+- **Blender**: 5.0 or later
 - **Python**: Built-in with Blender (no external dependencies)
 - **Optional**: `pyperclip` library for clipboard support (not required)
 

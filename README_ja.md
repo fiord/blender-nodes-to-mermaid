@@ -1,13 +1,14 @@
 # Node to Mermaid Converter
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Blender](https://img.shields.io/badge/Blender-4.0%2B-orange.svg)](https://www.blender.org/)
+[![Blender](https://img.shields.io/badge/Blender-5.0%2B-orange.svg)](https://www.blender.org/)
 
 Blenderのノードツリーを[Mermaid](https://mermaid.js.org/)ダイアグラム形式でエクスポートし、簡単に共有、ドキュメント化、可視化するためのアドオンです。
 
 ## 機能
 
 - 🎨 **任意のノードツリー**をMermaidダイアグラム形式でエクスポート
+- 📊 **ノードパラメータを含める** - 完全なドキュメント化のためにパラメータ情報を含めてエクスポート
 - 🔄 **主要なノードタイプをすべてサポート**:
   - シェーダーノード
   - コンポジターノード
@@ -18,6 +19,7 @@ Blenderのノードツリーを[Mermaid](https://mermaid.js.org/)ダイアグラ
   - `.mmd`ファイルとして保存
   - コンソールに出力
   - クリップボードにコピー（オプション）
+  - パラメータ含有の切り替え
 - 🚀 **外部依存なし** - 純粋な`bpy`実装
 - 🎯 **シンプルなUI** - ノードエディターのサイドバーに統合
 
@@ -26,7 +28,7 @@ Blenderのノードツリーを[Mermaid](https://mermaid.js.org/)ダイアグラ
 ### 方法1: ZIPファイルからインストール
 
 1. このリポジトリをZIPファイルとしてダウンロード
-2. Blender（バージョン4.0以降）を開く
+2. Blender（バージョン5.0以降）を開く
 3. `編集` → `プリファレンス` → `アドオン`に移動
 4. `インストール...`ボタンをクリック
 5. ダウンロードしたZIPファイルを選択
@@ -36,9 +38,9 @@ Blenderのノードツリーを[Mermaid](https://mermaid.js.org/)ダイアグラ
 
 1. このリポジトリをクローンまたはダウンロード
 2. フォルダ全体をBlenderのアドオンディレクトリにコピー:
-   - **Windows**: `%APPDATA%\Blender Foundation\Blender\4.x\scripts\addons\`
-   - **macOS**: `~/Library/Application Support/Blender/4.x/scripts/addons/`
-   - **Linux**: `~/.config/blender/4.x/scripts/addons/`
+   - **Windows**: `%APPDATA%\Blender Foundation\Blender\5.x\scripts\addons\`
+   - **macOS**: `~/Library/Application Support/Blender/5.x/scripts/addons/`
+   - **Linux**: `~/.config/blender/5.x/scripts/addons/`
 3. Blenderを再起動
 4. プリファレンス → アドオンでアドオンを有効化
 
@@ -52,9 +54,16 @@ Blenderのノードツリーを[Mermaid](https://mermaid.js.org/)ダイアグラ
 4. **Mermaid**タブに移動
 5. **Export to Mermaid**ボタンをクリック
 6. ダイアログでエクスポートオプションを設定:
+   - ✅ **Include Node Parameters**: ノードのパラメータと値を含めて完全なドキュメントを作成（共有時に推奨）
    - ✅ **Save to File**: `.blend`ファイルの隣に`.mmd`ファイルを保存
    - ☐ **Copy to Clipboard**: コードをクリップボードにコピー（`pyperclip`が必要）
 7. **OK**をクリックしてエクスポート
+
+### エクスポートオプションの説明
+
+- **Include Node Parameters**: 有効にすると、ノードの設定を再現するために必要なすべての重要なパラメータ（値、設定、色など）をエクスポートします。他のユーザーと完全なノードグラフを共有する際に必須です。
+- **Save to File**: `.blend`ファイルと同じディレクトリに`.mmd`ファイルとしてダイアグラムをエクスポートします
+- **Copy to Clipboard**: Mermaidコードをシステムのクリップボードにコピーして、すぐに貼り付けられるようにします
 
 ### 出力例
 
@@ -141,7 +150,7 @@ graph TD;
 
 ## 要件
 
-- **Blender**: バージョン4.0以降
+- **Blender**: バージョン5.0以降
 - **Python**: Blenderに組み込み（外部依存なし）
 - **オプション**: クリップボードサポート用の`pyperclip`ライブラリ（必須ではありません）
 
