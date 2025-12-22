@@ -1,22 +1,25 @@
-# Node to Mermaid Converter
+# Node to Diagram Converter
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Blender](https://img.shields.io/badge/Blender-5.0%2B-orange.svg)](https://www.blender.org/)
 
-Blenderのノードツリーを[Mermaid](https://mermaid.js.org/)ダイアグラム形式でエクスポートし、簡単に共有、ドキュメント化、可視化するためのアドオンです。
+Blenderのノードツリーを[Mermaid](https://mermaid.js.org/)または[PlantUML](https://plantuml.com/)ダイアグラム形式でエクスポートし、簡単に共有、ドキュメント化、可視化するためのアドオンです。
 
 ## 機能
 
-- 🎨 **任意のノードツリー**をMermaidクラス図形式でエクスポート
+- 🎨 **任意のノードツリー**をMermaidクラス図またはPlantUMLステートダイアグラム形式でエクスポート
+- 🔀 **複数のダイアグラム形式**:
+  - Mermaidクラス図形式
+  - PlantUMLステートダイアグラム形式
 - 📊 **パラメータ自動含有** - 完全なドキュメント化のため常にパラメータ情報を含めてエクスポート
 - 🔄 **主要なノードタイプをすべてサポート**:
   - シェーダーノード
   - コンポジターノード
   - ジオメトリノード
   - テクスチャノード
-- 📦 **ネストされたノードグループ**をコメントで処理
+- 📦 **ネストされたノードグループ**をコメント/ノートで処理
 - 💾 **エクスポートオプション**:
-  - `.mmd`ファイルとして保存
+  - `.mmd`ファイル（Mermaid）または`.puml`ファイル（PlantUML）として保存
   - コンソールに出力
   - クリップボードにコピー（オプション）
 - 🚀 **外部依存なし** - 純粋な`bpy`実装
@@ -31,7 +34,7 @@ Blenderのノードツリーを[Mermaid](https://mermaid.js.org/)ダイアグラ
 3. `編集` → `プリファレンス` → `アドオン`に移動
 4. `インストール...`ボタンをクリック
 5. ダウンロードしたZIPファイルを選択
-6. "Node: Node to Mermaid Converter"の横のチェックボックスをオンにしてアドオンを有効化
+6. "Node: Node to Diagram Converter"の横のチェックボックスをオンにしてアドオンを有効化
 
 ### 方法2: 手動インストール
 
@@ -51,16 +54,20 @@ Blenderのノードツリーを[Mermaid](https://mermaid.js.org/)ダイアグラ
 2. ノードツリーを作成または開く
 3. ノードエディターのサイドバーを開く（`N`キー）
 4. **Mermaid**タブに移動
-5. **Export to Mermaid**ボタンをクリック
+5. **Export to Diagram**ボタンをクリック
 6. ダイアログでエクスポートオプションを設定:
-   - ✅ **Save to File**: `.blend`ファイルの隣に`.mmd`ファイルを保存
+   - **Format**: MermaidまたはPlantUMLを選択
+   - ✅ **Save to File**: `.blend`ファイルの隣に`.mmd`ファイル（Mermaid）または`.puml`ファイル（PlantUML）を保存
    - ☐ **Copy to Clipboard**: コードをクリップボードにコピー（`pyperclip`が必要）
 7. **OK**をクリックしてエクスポート
 
 ### エクスポートオプションの説明
 
-- **Save to File**: `.blend`ファイルと同じディレクトリに`.mmd`ファイルとしてダイアグラムをエクスポートします
-- **Copy to Clipboard**: Mermaidコードをシステムのクリップボードにコピーして、すぐに貼り付けられるようにします
+- **Format**: ダイアグラム形式を選択:
+  - **Mermaid**: Mermaidクラス図としてエクスポート（`.mmd`ファイル）
+  - **PlantUML**: PlantUMLステートダイアグラムとしてエクスポート（`.puml`ファイル）
+- **Save to File**: `.blend`ファイルと同じディレクトリにダイアグラムファイルをエクスポートします
+- **Copy to Clipboard**: ダイアグラムコードをシステムのクリップボードにコピーして、すぐに貼り付けられるようにします
 
 ノードパラメータは完全なドキュメント化を確保するため、常にエクスポートに含まれます。
 
@@ -142,6 +149,65 @@ MyGroup --> Material_Output
 %% MyGroup is a node group containing 3 nodes
 ```
 
+### PlantUMLステートダイアグラムの例
+
+PlantUML形式でエクスポートすると、ノードは遷移を持つステートとして表現されます。
+
+#### シンプルなシェーダーネットワーク（PlantUML）
+
+```plantuml
+@startuml
+state Principled_BSDF {
+  Type: BsdfPrincipled
+  Inputs: 25
+  Outputs: 1
+}
+
+state Material_Output {
+  Type: OutputMaterial
+  Inputs: 3
+}
+
+Principled_BSDF --> Material_Output : BSDF → Surface
+@enduml
+```
+
+#### テクスチャノードを含む例（PlantUML）
+
+```plantuml
+@startuml
+state Image_Texture {
+  Type: TexImage
+  Outputs: 2
+}
+
+state Principled_BSDF {
+  Type: BsdfPrincipled
+  Inputs: 25
+  Outputs: 1
+}
+
+state Material_Output {
+  Type: OutputMaterial
+  Inputs: 3
+}
+
+Image_Texture --> Principled_BSDF : Color → Base Color
+Principled_BSDF --> Material_Output : BSDF → Surface
+@enduml
+```
+
+### PlantUMLダイアグラムの表示
+
+生成されたPlantUMLダイアグラムは以下の方法で表示できます:
+
+- [PlantUML Online Server](http://www.plantuml.com/plantuml/) - コードを貼り付けてダイアグラムを表示
+- [PlantUML Web Server](https://www.planttext.com/) - 別のオンラインビューア
+- VS Code - PlantUML拡張機能を使用
+- IntelliJ IDEA / PyCharm - PlantUMLサポートが組み込まれています
+- コマンドライン - PlantUML jarファイルを使用
+- ドキュメントツール - 多くのツールがPlantUML統合をサポート
+
 ## 技術詳細
 
 ### サポートされるノードツリー
@@ -154,18 +220,20 @@ MyGroup --> Material_Output
 ### 仕組み
 
 1. **トラバース** - ノードエディター内のアクティブなノードツリーを走査
-2. **抽出** - ノード情報（名前、タイプ、ソケット）を抽出
+2. **抽出** - ノード情報（名前、タイプ、ソケット、パラメータ）を抽出
 3. **マッピング** - リンクを介してノード間の接続をマッピング
-4. **生成** - `classDiagram`形式のMermaid構文を生成
-5. **処理** - ネストされたノードグループをコメントで処理
-6. **サニタイズ** - 有効なMermaidクラス名のためにノード名をサニタイズ
+4. **生成** - 選択された形式に基づいてダイアグラム構文を生成:
+   - **Mermaid**: ノードをクラスとして表現する`classDiagram`形式
+   - **PlantUML**: ノードをステートとして表現するステートダイアグラム形式
+5. **処理** - ネストされたノードグループをコメント/ノートで処理
+6. **サニタイズ** - 有効なダイアグラム識別子のためにノード名をサニタイズ
 
 ### ファイル出力
 
 - **デフォルトの場所**: `.blend`ファイルと同じディレクトリ
-- **ファイル名**: `node_tree.mmd`
+- **ファイル名**: `node_tree.mmd`（Mermaid）または`node_tree.puml`（PlantUML）
 - **フォールバック**: `.blend`ファイルが保存されていない場合はシステムの一時ディレクトリ
-- **形式**: プレーンテキストのMermaidダイアグラムコード
+- **形式**: プレーンテキストのダイアグラムコード
 
 ## 要件
 
@@ -194,8 +262,9 @@ blender-nodes-to-mermaid/
 
 ### コード概要
 
-- `build_mermaid()`: ノードツリーをMermaid構文に再帰的に変換
-- `NODE_OT_export_to_mermaid`: エクスポート機能のためのオペレーター
+- `build_class_diagram()`: ノードツリーをMermaidクラス図構文に変換
+- `build_plantuml_state_diagram()`: ノードツリーをPlantUMLステートダイアグラム構文に変換
+- `NODE_OT_export_to_mermaid`: 形式選択機能を持つエクスポートのためのオペレーター
 - `NODE_PT_mermaid_panel`: ノードエディターサイドバーのUIパネル
 
 ## 貢献

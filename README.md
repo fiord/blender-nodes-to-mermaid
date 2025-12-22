@@ -1,22 +1,25 @@
-# Node to Mermaid Converter
+# Node to Diagram Converter
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Blender](https://img.shields.io/badge/Blender-5.0%2B-orange.svg)](https://www.blender.org/)
 
-A Blender add-on that exports node trees to [Mermaid](https://mermaid.js.org/) diagram format for easy sharing, documentation, and visualization.
+A Blender add-on that exports node trees to [Mermaid](https://mermaid.js.org/) or [PlantUML](https://plantuml.com/) diagram formats for easy sharing, documentation, and visualization.
 
 ## Features
 
-- 🎨 **Export any node tree** to Mermaid class diagram format
+- 🎨 **Export any node tree** to Mermaid class diagram or PlantUML state diagram format
+- 🔀 **Multiple diagram formats**:
+  - Mermaid class diagram format
+  - PlantUML state diagram format
 - 📊 **Automatic parameter inclusion** - Always exports complete parameter information for full documentation
 - 🔄 **Supports all major node types**:
   - Shader Nodes
   - Compositor Nodes
   - Geometry Nodes
   - Texture Nodes
-- 📦 **Handles nested node groups** with comments
+- 📦 **Handles nested node groups** with comments/notes
 - 💾 **Export options**:
-  - Save to `.mmd` file
+  - Save to `.mmd` file (Mermaid) or `.puml` file (PlantUML)
   - Print to console
   - Copy to clipboard (optional)
 - 🚀 **Zero external dependencies** - pure `bpy` implementation
@@ -31,7 +34,7 @@ A Blender add-on that exports node trees to [Mermaid](https://mermaid.js.org/) d
 3. Go to `Edit` → `Preferences` → `Add-ons`
 4. Click `Install...` button
 5. Select the downloaded ZIP file
-6. Enable the add-on by checking the box next to "Node: Node to Mermaid Converter"
+6. Enable the add-on by checking the box next to "Node: Node to Diagram Converter"
 
 ### Method 2: Manual Installation
 
@@ -51,16 +54,20 @@ A Blender add-on that exports node trees to [Mermaid](https://mermaid.js.org/) d
 2. Create or open a node tree
 3. Open the sidebar in the Node Editor (`N` key)
 4. Navigate to the **Mermaid** tab
-5. Click the **Export to Mermaid** button
+5. Click the **Export to Diagram** button
 6. Configure export options in the dialog:
-   - ✅ **Save to File**: Saves `.mmd` file next to your `.blend` file
+   - **Format**: Choose between Mermaid or PlantUML
+   - ✅ **Save to File**: Saves `.mmd` file (Mermaid) or `.puml` file (PlantUML) next to your `.blend` file
    - ☐ **Copy to Clipboard**: Copies code to clipboard (requires `pyperclip`)
 7. Click **OK** to export
 
 ### Export Options Explained
 
-- **Save to File**: Exports the diagram to a `.mmd` file in the same directory as your `.blend` file
-- **Copy to Clipboard**: Copies the Mermaid code to your system clipboard for quick pasting
+- **Format**: Choose the diagram format:
+  - **Mermaid**: Exports as a Mermaid class diagram (`.mmd` file)
+  - **PlantUML**: Exports as a PlantUML state diagram (`.puml` file)
+- **Save to File**: Exports the diagram to a file in the same directory as your `.blend` file
+- **Copy to Clipboard**: Copies the diagram code to your system clipboard for quick pasting
 
 Node parameters are always included in the export to ensure complete documentation.
 
@@ -142,6 +149,65 @@ MyGroup --> Material_Output
 %% MyGroup is a node group containing 3 nodes
 ```
 
+### PlantUML State Diagram Examples
+
+When exporting to PlantUML format, nodes are represented as states with transitions.
+
+#### Simple Shader Network (PlantUML)
+
+```plantuml
+@startuml
+state Principled_BSDF {
+  Type: BsdfPrincipled
+  Inputs: 25
+  Outputs: 1
+}
+
+state Material_Output {
+  Type: OutputMaterial
+  Inputs: 3
+}
+
+Principled_BSDF --> Material_Output : BSDF → Surface
+@enduml
+```
+
+#### With Texture Nodes (PlantUML)
+
+```plantuml
+@startuml
+state Image_Texture {
+  Type: TexImage
+  Outputs: 2
+}
+
+state Principled_BSDF {
+  Type: BsdfPrincipled
+  Inputs: 25
+  Outputs: 1
+}
+
+state Material_Output {
+  Type: OutputMaterial
+  Inputs: 3
+}
+
+Image_Texture --> Principled_BSDF : Color → Base Color
+Principled_BSDF --> Material_Output : BSDF → Surface
+@enduml
+```
+
+### Viewing PlantUML Diagrams
+
+You can view the generated PlantUML diagrams using:
+
+- [PlantUML Online Server](http://www.plantuml.com/plantuml/) - Paste your code and see the diagram
+- [PlantUML Web Server](https://www.planttext.com/) - Another online viewer
+- VS Code - With PlantUML extensions
+- IntelliJ IDEA / PyCharm - Built-in PlantUML support
+- Command line - Using PlantUML jar file
+- Documentation tools - Many support PlantUML integration
+
 ## Technical Details
 
 ### Supported Node Trees
@@ -154,18 +220,20 @@ MyGroup --> Material_Output
 ### How It Works
 
 1. **Traverses** the active node tree in the Node Editor
-2. **Extracts** node information (name, type, sockets)
+2. **Extracts** node information (name, type, sockets, parameters)
 3. **Maps** connections between nodes via links
-4. **Generates** Mermaid syntax in `graph TD` (top-down) format
-5. **Handles** nested node groups recursively as subgraphs
-6. **Sanitizes** node names for valid Mermaid IDs
+4. **Generates** diagram syntax based on selected format:
+   - **Mermaid**: `classDiagram` format with nodes as classes
+   - **PlantUML**: State diagram format with nodes as states
+5. **Handles** nested node groups with comments/notes
+6. **Sanitizes** node names for valid diagram identifiers
 
 ### File Output
 
 - **Default location**: Same directory as your `.blend` file
-- **Filename**: `node_tree.mmd`
+- **Filename**: `node_tree.mmd` (Mermaid) or `node_tree.puml` (PlantUML)
 - **Fallback**: System temp directory if `.blend` file is not saved
-- **Format**: Plain text Mermaid diagram code
+- **Format**: Plain text diagram code
 
 ## Requirements
 
@@ -193,8 +261,9 @@ blender-nodes-to-mermaid/
 
 ### Code Overview
 
-- `build_mermaid()`: Recursively converts node tree to Mermaid syntax
-- `NODE_OT_export_to_mermaid`: Operator for export functionality
+- `build_class_diagram()`: Converts node tree to Mermaid class diagram syntax
+- `build_plantuml_state_diagram()`: Converts node tree to PlantUML state diagram syntax
+- `NODE_OT_export_to_mermaid`: Operator for export functionality with format selection
 - `NODE_PT_mermaid_panel`: UI panel in Node Editor sidebar
 
 ## Contributing
