@@ -44,6 +44,17 @@ def sanitize_id(name, prefix=''):
     return prefix + sanitized
 
 
+def sanitize_class_name(name):
+    """Sanitize node name for use as a class name in class diagrams."""
+    # For class diagrams, we want more readable names
+    # Remove special characters but keep spaces for readability
+    sanitized = ''.join(c if c.isalnum() or c in (' ', '_') else '_' for c in name)
+    # Ensure it doesn't start with a number
+    if sanitized and sanitized[0].isdigit():
+        sanitized = 'Node_' + sanitized
+    return sanitized or 'Node'
+
+
 def get_node_parameters(node):
     """
     Extract important parameters from a node for documentation.
@@ -269,6 +280,148 @@ def build_mermaid(node_tree, prefix='', indent=0, include_parameters=True):
     return "\n".join(mermaid_lines)
 
 
+def build_class_diagram(node_tree, include_parameters=True):
+    """
+    Build Mermaid class diagram from a node tree.
+    This format better represents nodes with their properties.
+    
+    Args:
+        node_tree: The Blender node tree to convert
+        include_parameters: Whether to include node parameters in class definitions
+        
+    Returns:
+        String containing Mermaid class diagram code
+    """
+    if node_tree is None:
+        return ""
+    
+    mermaid_lines = []
+    
+    # Create a mapping of nodes to their class IDs
+    node_classes = {}
+    class_counters = {}
+    
+    # First pass: Create class definitions for each node
+    for node in node_tree.nodes:
+        # Create unique class name
+        base_class_name = sanitize_class_name(node.name)
+        
+        # Handle class name collisions
+        if base_class_name in class_counters:
+            class_counters[base_class_name] += 1
+            class_name = f"{base_class_name}_{class_counters[base_class_name]}"
+        else:
+            class_counters[base_class_name] = 0
+            class_name = base_class_name
+        
+        node_classes[node.name] = class_name
+        
+        # Get node type name
+        node_type = node.bl_idname
+        for prefix_to_remove in ['ShaderNode', 'CompositorNode', 'GeometryNode', 'TextureNode', 'Node']:
+            if node_type.startswith(prefix_to_remove):
+                node_type = node_type[len(prefix_to_remove):]
+                break
+        
+        # Start class definition
+        mermaid_lines.append(f"class {class_name}{{")
+        
+        # Add node type as a property
+        mermaid_lines.append(f"    +String type: {node_type}")
+        
+        # Add parameters if requested
+        if include_parameters:
+            params = get_node_parameters(node)
+            if params:
+                # Limit parameters
+                important_params = list(params.items())[:MAX_DISPLAYED_PARAMETERS]
+                
+                for key, value in important_params:
+                    # Determine type and format value
+                    if isinstance(value, bool):
+                        param_type = "Boolean"
+                        value_str = str(value)
+                    elif isinstance(value, int):
+                        param_type = "Integer"
+                        value_str = str(value)
+                    elif isinstance(value, float):
+                        param_type = "Float"
+                        value_str = f"{value:.3f}"
+                    elif isinstance(value, str):
+                        param_type = "String"
+                        value_str = f'"{value}"'
+                    elif isinstance(value, (tuple, list)):
+                        param_type = "Vector"
+                        formatted_values = [f"{v:.3f}" if isinstance(v, float) else str(v) for v in value]
+                        value_str = f"({', '.join(formatted_values)})"
+                    else:
+                        param_type = "Object"
+                        value_str = str(value)
+                    
+                    # Add parameter line with type and value
+                    mermaid_lines.append(f"    +{param_type} {key}: {value_str}")
+        
+        # Add input/output socket counts as properties
+        if hasattr(node, 'inputs') and len(node.inputs) > 0:
+            mermaid_lines.append(f"    +inputs: {len(node.inputs)}")
+        if hasattr(node, 'outputs') and len(node.outputs) > 0:
+            mermaid_lines.append(f"    +outputs: {len(node.outputs)}")
+        
+        # Close class definition
+        mermaid_lines.append("}")
+        mermaid_lines.append("")  # Add blank line for readability
+    
+    # Second pass: Create relationships (connections between nodes)
+    for link in node_tree.links:
+        try:
+            if not link.is_valid:
+                continue
+            
+            from_node = link.from_node
+            to_node = link.to_node
+            
+            if from_node.name not in node_classes or to_node.name not in node_classes:
+                continue
+            
+            from_class = node_classes[from_node.name]
+            to_class = node_classes[to_node.name]
+            
+            # Get socket names for the relationship label
+            from_socket = link.from_socket.name
+            to_socket = link.to_socket.name
+            
+            # Create relationship with label
+            if from_socket and to_socket:
+                label = f"{from_socket} → {to_socket}"
+            elif from_socket:
+                label = from_socket
+            elif to_socket:
+                label = to_socket
+            else:
+                label = ""
+            
+            # Use association relationship with label
+            if label:
+                mermaid_lines.append(f"{from_class} --> {to_class} : {label}")
+            else:
+                mermaid_lines.append(f"{from_class} --> {to_class}")
+                
+        except Exception as e:
+            print(f"Warning: Skipped link in class diagram: {e}")
+            continue
+    
+    # Third pass: Handle node groups with namespace notation
+    for node in node_tree.nodes:
+        if hasattr(node, 'node_tree') and node.node_tree is not None:
+            # Add a note about the group
+            node_class = node_classes.get(node.name)
+            if node_class:
+                mermaid_lines.append("")
+                mermaid_lines.append(f"note for {node_class} \"Group: {node.name}\\nContains: {len(node.node_tree.nodes)} nodes\"")
+    
+    return "\n".join(mermaid_lines)
+
+
 class NODE_OT_export_to_mermaid(bpy.types.Operator):
     """Export the current node tree to Mermaid diagram format"""
     bl_idname = "node.export_to_mermaid"
@@ -276,6 +429,16 @@ class NODE_OT_export_to_mermaid(bpy.types.Operator):
     bl_options = {'REGISTER', 'UNDO'}
     
     # Properties for export options
+    diagram_format: bpy.props.EnumProperty(
+        name="Diagram Format",
+        description="Choose the Mermaid diagram format",
+        items=[
+            ('FLOWCHART', "Flowchart", "Traditional flowchart (graph TD) - shows node flow"),
+            ('CLASS', "Class Diagram", "Class diagram - better for showing properties and structure"),
+        ],
+        default='CLASS'
+    )
+    
     export_to_file: bpy.props.BoolProperty(
         name="Save to File",
         description="Save the Mermaid code to a file",
@@ -324,7 +487,10 @@ class NODE_OT_export_to_mermaid(bpy.types.Operator):
         
         # Build the Mermaid diagram
         try:
-            mermaid_code = "graph TD;\n" + build_mermaid(node_tree, include_parameters=self.include_parameters)
+            if self.diagram_format == 'CLASS':
+                mermaid_code = "classDiagram\n" + build_class_diagram(node_tree, include_parameters=self.include_parameters)
+            else:  # FLOWCHART
+                mermaid_code = "graph TD;\n" + build_mermaid(node_tree, include_parameters=self.include_parameters)
             
             # Print to console
             print("\n" + "="*50)
@@ -378,7 +544,9 @@ class NODE_OT_export_to_mermaid(bpy.types.Operator):
     def draw(self, context):
         """Draw the operator properties in the dialog."""
         layout = self.layout
+        layout.prop(self, "diagram_format")
         layout.prop(self, "include_parameters")
+        layout.separator()
         layout.prop(self, "export_to_file")
         layout.prop(self, "copy_to_clipboard")
 

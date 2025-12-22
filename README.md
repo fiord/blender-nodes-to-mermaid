@@ -9,6 +9,9 @@ A Blender add-on that exports node trees to [Mermaid](https://mermaid.js.org/) d
 
 - 🎨 **Export any node tree** to Mermaid diagram format
 - 📊 **Include node parameters** - Export with complete parameter information for full documentation
+- 🎭 **Multiple diagram formats**:
+  - **Class Diagram** - Better for showing properties and structure (recommended)
+  - **Flowchart** - Traditional graph format for showing node flow
 - 🔄 **Supports all major node types**:
   - Shader Nodes
   - Compositor Nodes
@@ -54,6 +57,9 @@ A Blender add-on that exports node trees to [Mermaid](https://mermaid.js.org/) d
 4. Navigate to the **Mermaid** tab
 5. Click the **Export to Mermaid** button
 6. Configure export options in the dialog:
+   - **Diagram Format**: Choose between Flowchart or Class Diagram
+     - **Class Diagram** (default): Better for showing node properties and structure
+     - **Flowchart**: Traditional graph format showing node flow
    - ✅ **Include Node Parameters**: Include node parameters and values for complete documentation (recommended for sharing)
    - ✅ **Save to File**: Saves `.mmd` file next to your `.blend` file
    - ☐ **Copy to Clipboard**: Copies code to clipboard (requires `pyperclip`)
@@ -61,13 +67,39 @@ A Blender add-on that exports node trees to [Mermaid](https://mermaid.js.org/) d
 
 ### Export Options Explained
 
+- **Diagram Format**: 
+  - **Class Diagram**: Represents each node as a class with properties listed inside. Better for documentation and showing parameter details.
+  - **Flowchart**: Traditional flowchart format with boxes and arrows. Better for visualizing the flow of data through nodes.
 - **Include Node Parameters**: When enabled, exports all important node parameters (values, settings, colors, etc.) needed to recreate the node setup. This is essential for sharing complete node graphs with others.
 - **Save to File**: Exports the diagram to a `.mmd` file in the same directory as your `.blend` file
 - **Copy to Clipboard**: Copies the Mermaid code to your system clipboard for quick pasting
 
-### Output Example
+### Output Examples
 
-For a simple shader setup, the add-on generates Mermaid code like:
+#### Class Diagram Format (Recommended for Sharing)
+
+The class diagram format shows nodes with their properties in a structured way:
+
+```mermaid
+classDiagram
+class Principled_BSDF{
+    +String type: Principled
+    +Float metallic: 0.000
+    +Float roughness: 0.500
+    +inputs: 25
+    +outputs: 1
+}
+class Material_Output{
+    +String type: Output
+    +inputs: 3
+    +outputs: 0
+}
+Principled_BSDF --> Material_Output : BSDF → Surface
+```
+
+#### Flowchart Format
+
+For a simple shader setup, the flowchart format generates code like:
 
 ```mermaid
 graph TD;

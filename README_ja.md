@@ -9,6 +9,9 @@ Blenderのノードツリーを[Mermaid](https://mermaid.js.org/)ダイアグラ
 
 - 🎨 **任意のノードツリー**をMermaidダイアグラム形式でエクスポート
 - 📊 **ノードパラメータを含める** - 完全なドキュメント化のためにパラメータ情報を含めてエクスポート
+- 🎭 **複数のダイアグラム形式**:
+  - **クラス図** - プロパティと構造を表示するのに最適（推奨）
+  - **フローチャート** - ノードフローを表示する従来のグラフ形式
 - 🔄 **主要なノードタイプをすべてサポート**:
   - シェーダーノード
   - コンポジターノード
@@ -54,6 +57,9 @@ Blenderのノードツリーを[Mermaid](https://mermaid.js.org/)ダイアグラ
 4. **Mermaid**タブに移動
 5. **Export to Mermaid**ボタンをクリック
 6. ダイアログでエクスポートオプションを設定:
+   - **Diagram Format**: フローチャートまたはクラス図を選択
+     - **Class Diagram**（デフォルト）: ノードのプロパティと構造を表示するのに最適
+     - **Flowchart**: ノードフローを表示する従来のグラフ形式
    - ✅ **Include Node Parameters**: ノードのパラメータと値を含めて完全なドキュメントを作成（共有時に推奨）
    - ✅ **Save to File**: `.blend`ファイルの隣に`.mmd`ファイルを保存
    - ☐ **Copy to Clipboard**: コードをクリップボードにコピー（`pyperclip`が必要）
@@ -61,9 +67,39 @@ Blenderのノードツリーを[Mermaid](https://mermaid.js.org/)ダイアグラ
 
 ### エクスポートオプションの説明
 
+- **Diagram Format**: 
+  - **Class Diagram**: 各ノードをプロパティを含むクラスとして表現。ドキュメント化やパラメータの詳細表示に最適です。
+  - **Flowchart**: ボックスと矢印による従来のフローチャート形式。ノード間のデータフローの可視化に最適です。
 - **Include Node Parameters**: 有効にすると、ノードの設定を再現するために必要なすべての重要なパラメータ（値、設定、色など）をエクスポートします。他のユーザーと完全なノードグラフを共有する際に必須です。
 - **Save to File**: `.blend`ファイルと同じディレクトリに`.mmd`ファイルとしてダイアグラムをエクスポートします
 - **Copy to Clipboard**: Mermaidコードをシステムのクリップボードにコピーして、すぐに貼り付けられるようにします
+
+### 出力例
+
+#### クラス図形式（共有に推奨）
+
+クラス図形式は、ノードをプロパティと共に構造化された方法で表示します:
+
+```mermaid
+classDiagram
+class Principled_BSDF{
+    +String type: Principled
+    +Float metallic: 0.000
+    +Float roughness: 0.500
+    +inputs: 25
+    +outputs: 1
+}
+class Material_Output{
+    +String type: Output
+    +inputs: 3
+    +outputs: 0
+}
+Principled_BSDF --> Material_Output : BSDF → Surface
+```
+
+#### フローチャート形式
+
+シンプルなシェーダー設定の場合、フローチャート形式は次のようなコードを生成します:
 
 ### 出力例
 
