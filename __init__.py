@@ -46,9 +46,14 @@ def sanitize_id(name, prefix=''):
 
 def sanitize_class_name(name):
     """Sanitize node name for use as a class name in class diagrams."""
-    # For class diagrams, we want more readable names
-    # Remove special characters but keep spaces for readability
-    sanitized = ''.join(c if c.isalnum() or c in (' ', '_') else '_' for c in name)
+    # For class diagrams, class names must be valid identifiers (no spaces)
+    # Replace spaces and special characters with underscores
+    sanitized = ''.join(c if c.isalnum() else '_' for c in name)
+    # Remove consecutive underscores
+    while '__' in sanitized:
+        sanitized = sanitized.replace('__', '_')
+    # Remove leading/trailing underscores
+    sanitized = sanitized.strip('_')
     # Ensure it doesn't start with a number
     if sanitized and sanitized[0].isdigit():
         sanitized = 'Node_' + sanitized
@@ -410,14 +415,21 @@ def build_class_diagram(node_tree, include_parameters=True):
             print(f"Warning: Skipped link in class diagram: {e}")
             continue
     
-    # Third pass: Handle node groups with namespace notation
+    # Third pass: Handle node groups
+    # In class diagrams, we can show groups using composition relationships
     for node in node_tree.nodes:
         if hasattr(node, 'node_tree') and node.node_tree is not None:
-            # Add a note about the group
             node_class = node_classes.get(node.name)
             if node_class:
+                # Add a comment about the group content
                 mermaid_lines.append("")
-                mermaid_lines.append(f"note for {node_class} \"Group: {node.name}\\nContains: {len(node.node_tree.nodes)} nodes\"")
+                mermaid_lines.append(f"%% {node_class} is a node group containing {len(node.node_tree.nodes)} nodes")
+                
+                # Optionally create a namespace-like structure by listing contained nodes
+                if len(node.node_tree.nodes) <= 3:  # Only show details for small groups
+                    mermaid_lines.append(f"%% Group '{node.name}' contains:")
+                    for inner_node in node.node_tree.nodes:
+                        mermaid_lines.append(f"%%   - {inner_node.name} ({inner_node.bl_idname})")
     
     return "\n".join(mermaid_lines)
 
