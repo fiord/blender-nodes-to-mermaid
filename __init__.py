@@ -8,6 +8,7 @@ It supports all main node tree types: Shader, Compositor, Texture, and Geometry.
 import bpy
 import os
 import tempfile
+import traceback
 
 # Try to import optional dependencies
 try:
@@ -240,7 +241,6 @@ class NODE_OT_export_to_mermaid(bpy.types.Operator):
             
         except Exception as e:
             self.report({'ERROR'}, f"Failed to generate Mermaid code: {e}")
-            import traceback
             traceback.print_exc()
             return {'CANCELLED'}
     
