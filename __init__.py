@@ -29,6 +29,9 @@ except ImportError:
     print(f"[{bl_info['name']}] Optional dependency 'pyperclip' not found. Clipboard functionality will be disabled.")
     HAS_PYPERCLIP = False
 
+# Configuration constants
+MAX_DISPLAYED_PARAMETERS = 5  # Maximum number of parameters to display in node labels
+
 def sanitize_id(name, prefix=''):
     """Sanitize node name to create a valid Mermaid ID."""
     # Replace spaces and special characters
@@ -71,14 +74,15 @@ def get_node_parameters(node):
             if prop_name.startswith('_'):
                 continue
             # Skip methods
-            if callable(getattr(node, prop_name, None)):
+            prop_value = getattr(node, prop_name, None)
+            if callable(prop_value):
                 continue
             # Skip properties in skip list
             if prop_name in skip_props:
                 continue
                 
             try:
-                value = getattr(node, prop_name)
+                value = prop_value
                 
                 # Skip None values and complex objects
                 if value is None:
@@ -126,8 +130,8 @@ def format_node_label(node, node_type):
     # Format parameters for display (limit to most important ones)
     if params:
         param_lines = []
-        # Limit to 5 most important parameters to avoid overly long labels
-        important_params = list(params.items())[:5]
+        # Limit to MAX_DISPLAYED_PARAMETERS to avoid overly long labels
+        important_params = list(params.items())[:MAX_DISPLAYED_PARAMETERS]
         
         for key, value in important_params:
             # Format the value based on type
