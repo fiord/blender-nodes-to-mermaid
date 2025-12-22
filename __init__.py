@@ -117,7 +117,9 @@ def get_node_parameters(node):
 def build_class_diagram(node_tree):
     """
     Build Mermaid class diagram from a node tree.
-    This format better represents nodes with their properties.
+    This format represents nodes with their properties and parameters.
+    
+    Node parameters are automatically included for complete documentation.
     
     Args:
         node_tree: The Blender node tree to convert
