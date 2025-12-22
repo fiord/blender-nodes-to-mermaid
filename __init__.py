@@ -15,7 +15,7 @@ bl_info = {
     "author": "blender-nodes-to-mermaid contributors",
     "version": (1, 5, 0),
     "blender": (5, 0, 0),
-    "location": "Node Editor > Sidebar > Mermaid",
+    "location": "Node Editor > Sidebar > Diagram",
     "description": "Export node trees to Mermaid or PlantUML diagram formats with parameters",
     "category": "Node",
 }
@@ -32,9 +32,9 @@ except ImportError:
 # Configuration constants
 MAX_DISPLAYED_PARAMETERS = 5  # Maximum number of parameters to display in node labels
 
-def sanitize_class_name(name):
-    """Sanitize node name for use as a class name in class diagrams."""
-    # For class diagrams, class names must be valid identifiers (no spaces)
+def sanitize_identifier(name):
+    """Sanitize node name for use as an identifier in diagrams (class names, state names, etc.)."""
+    # For diagrams, identifiers must be valid (no spaces)
     # Replace spaces and special characters with underscores
     sanitized = ''.join(c if c.isalnum() else '_' for c in name)
     # Remove consecutive underscores
@@ -139,7 +139,7 @@ def build_class_diagram(node_tree):
     # First pass: Create class definitions for each node
     for node in node_tree.nodes:
         # Create unique class name
-        base_class_name = sanitize_class_name(node.name)
+        base_class_name = sanitize_identifier(node.name)
         
         # Handle class name collisions
         if base_class_name in class_counters:
@@ -288,7 +288,7 @@ def build_plantuml_state_diagram(node_tree):
     # First pass: Create state definitions for each node
     for node in node_tree.nodes:
         # Create unique state name
-        base_state_name = sanitize_class_name(node.name)
+        base_state_name = sanitize_identifier(node.name)
         
         # Handle state name collisions
         if base_state_name in state_counters:
@@ -392,13 +392,20 @@ def build_plantuml_state_diagram(node_tree):
             continue
     
     # Third pass: Handle node groups
+    note_positions = ['right', 'left', 'top', 'bottom']
+    note_position_index = 0
+    
     for node in node_tree.nodes:
         if hasattr(node, 'node_tree') and node.node_tree is not None:
             node_state = node_states.get(node.name)
             if node_state:
                 # Add a note about the group content
+                # Cycle through note positions to avoid overlapping
+                position = note_positions[note_position_index % len(note_positions)]
+                note_position_index += 1
+                
                 plantuml_lines.append("")
-                plantuml_lines.append(f"note right of {node_state}")
+                plantuml_lines.append(f"note {position} of {node_state}")
                 plantuml_lines.append(f"  Node group containing")
                 plantuml_lines.append(f"  {len(node.node_tree.nodes)} nodes")
                 plantuml_lines.append("end note")
@@ -537,7 +544,7 @@ class NODE_PT_mermaid_panel(bpy.types.Panel):
     bl_idname = "NODE_PT_mermaid_panel"
     bl_space_type = 'NODE_EDITOR'
     bl_region_type = 'UI'
-    bl_category = 'Mermaid'
+    bl_category = 'Diagram'
     
     @classmethod
     def poll(cls, context):

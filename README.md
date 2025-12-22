@@ -53,7 +53,7 @@ A Blender add-on that exports node trees to [Mermaid](https://mermaid.js.org/) o
 1. Open any Node Editor (Shader Editor, Compositor, Geometry Nodes, etc.)
 2. Create or open a node tree
 3. Open the sidebar in the Node Editor (`N` key)
-4. Navigate to the **Mermaid** tab
+4. Navigate to the **Diagram** tab
 5. Click the **Export to Diagram** button
 6. Configure export options in the dialog:
    - **Format**: Choose between Mermaid or PlantUML

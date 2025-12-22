@@ -53,7 +53,7 @@ Blenderのノードツリーを[Mermaid](https://mermaid.js.org/)または[Plant
 1. 任意のノードエディター（シェーダーエディター、コンポジター、ジオメトリノードなど）を開く
 2. ノードツリーを作成または開く
 3. ノードエディターのサイドバーを開く（`N`キー）
-4. **Mermaid**タブに移動
+4. **Diagram**タブに移動
 5. **Export to Diagram**ボタンをクリック
 6. ダイアログでエクスポートオプションを設定:
    - **Format**: MermaidまたはPlantUMLを選択
