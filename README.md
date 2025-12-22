@@ -86,11 +86,6 @@ class Material_Output{
 Principled_BSDF --> Material_Output : BSDF → Surface
 ```
 
-#### Flowchart Format
-}
-Principled_BSDF --> Material_Output : BSDF → Surface
-```
-
 ### Viewing Mermaid Diagrams
 
 You can view the generated Mermaid diagrams using:
@@ -114,8 +109,6 @@ class Material_Output{
 }
 Principled_BSDF --> Material_Output : BSDF → Surface
 ```
-
-### With Texture Nodes
 
 ### With Texture Nodes
 
