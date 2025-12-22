@@ -7,17 +7,14 @@ Blenderのノードツリーを[Mermaid](https://mermaid.js.org/)ダイアグラ
 
 ## 機能
 
-- 🎨 **任意のノードツリー**をMermaidダイアグラム形式でエクスポート
+- 🎨 **任意のノードツリー**をMermaidクラス図形式でエクスポート
 - 📊 **ノードパラメータを含める** - 完全なドキュメント化のためにパラメータ情報を含めてエクスポート
-- 🎭 **複数のダイアグラム形式**:
-  - **クラス図** - プロパティと構造を表示するのに最適（推奨）
-  - **フローチャート** - ノードフローを表示する従来のグラフ形式
 - 🔄 **主要なノードタイプをすべてサポート**:
   - シェーダーノード
   - コンポジターノード
   - ジオメトリノード
   - テクスチャノード
-- 📦 **ネストされたノードグループ**をサブグラフとして再帰的に処理
+- 📦 **ネストされたノードグループ**をコメントで処理
 - 💾 **複数のエクスポートオプション**:
   - `.mmd`ファイルとして保存
   - コンソールに出力
@@ -57,9 +54,6 @@ Blenderのノードツリーを[Mermaid](https://mermaid.js.org/)ダイアグラ
 4. **Mermaid**タブに移動
 5. **Export to Mermaid**ボタンをクリック
 6. ダイアログでエクスポートオプションを設定:
-   - **Diagram Format**: フローチャートまたはクラス図を選択
-     - **Class Diagram**（デフォルト）: ノードのプロパティと構造を表示するのに最適
-     - **Flowchart**: ノードフローを表示する従来のグラフ形式
    - ✅ **Include Node Parameters**: ノードのパラメータと値を含めて完全なドキュメントを作成（共有時に推奨）
    - ✅ **Save to File**: `.blend`ファイルの隣に`.mmd`ファイルを保存
    - ☐ **Copy to Clipboard**: コードをクリップボードにコピー（`pyperclip`が必要）
@@ -67,18 +61,13 @@ Blenderのノードツリーを[Mermaid](https://mermaid.js.org/)ダイアグラ
 
 ### エクスポートオプションの説明
 
-- **Diagram Format**: 
-  - **Class Diagram**: 各ノードをプロパティを含むクラスとして表現。ドキュメント化やパラメータの詳細表示に最適です。
-  - **Flowchart**: ボックスと矢印による従来のフローチャート形式。ノード間のデータフローの可視化に最適です。
 - **Include Node Parameters**: 有効にすると、ノードの設定を再現するために必要なすべての重要なパラメータ（値、設定、色など）をエクスポートします。他のユーザーと完全なノードグラフを共有する際に必須です。
 - **Save to File**: `.blend`ファイルと同じディレクトリに`.mmd`ファイルとしてダイアグラムをエクスポートします
 - **Copy to Clipboard**: Mermaidコードをシステムのクリップボードにコピーして、すぐに貼り付けられるようにします
 
 ### 出力例
 
-#### クラス図形式（共有に推奨）
-
-クラス図形式は、ノードをプロパティと共に構造化された方法で表示します:
+アドオンは、各ノードをプロパティと共に構造化された方法で表示するMermaidクラス図としてエクスポートします:
 
 ```mermaid
 classDiagram
@@ -97,21 +86,6 @@ class Material_Output{
 Principled_BSDF --> Material_Output : BSDF → Surface
 ```
 
-#### フローチャート形式
-
-シンプルなシェーダー設定の場合、フローチャート形式は次のようなコードを生成します:
-
-### 出力例
-
-シンプルなシェーダー設定の場合、アドオンは次のようなMermaidコードを生成します:
-
-```mermaid
-graph TD;
-    Principled_BSDF["Principled BSDF (Principled)"]
-    Material_Output["Material Output (Output)"]
-    Principled_BSDF -->|BSDF → Surface| Material_Output
-```
-
 ### Mermaidダイアグラムの表示
 
 生成されたMermaidダイアグラムは以下の方法で表示できます:
@@ -125,38 +99,48 @@ graph TD;
 
 ### シンプルなシェーダーネットワーク
 
-```python
-# Principled BSDFがMaterial Outputに接続されている例
-graph TD;
-    Principled_BSDF["Principled BSDF (Principled)"]
-    Material_Output["Material Output (Output)"]
-    Principled_BSDF -->|BSDF → Surface| Material_Output
+```mermaid
+classDiagram
+class Principled_BSDF{
+    +String type: Principled
+}
+class Material_Output{
+    +String type: Output
+}
+Principled_BSDF --> Material_Output : BSDF → Surface
 ```
 
 ### テクスチャノードを含む例
 
-```python
-# Image textureがベースカラーを制御する例
-graph TD;
-    Image_Texture["Image Texture (TexImage)"]
-    Principled_BSDF["Principled BSDF (Principled)"]
-    Material_Output["Material Output (Output)"]
-    Image_Texture -->|Color → Base Color| Principled_BSDF
-    Principled_BSDF -->|BSDF → Surface| Material_Output
+```mermaid
+classDiagram
+class Image_Texture{
+    +String type: TexImage
+}
+class Principled_BSDF{
+    +String type: Principled
+}
+class Material_Output{
+    +String type: Output
+}
+Image_Texture --> Principled_BSDF : Color → Base Color
+Principled_BSDF --> Material_Output : BSDF → Surface
 ```
 
 ### ネストされたグループ
 
-アドオンはサブグラフを作成することでノードグループを自動的に処理します:
+アドオンはコメント注釈でノードグループを自動的に処理します:
 
-```python
-graph TD;
-    MyGroup["My Group (Group)"]
-    Material_Output["Material Output (Output)"]
-    subgraph MyGroup["Group: My Group"]
-        MyGroup_InternalNode["Internal Node (...)"]
-    end
-    MyGroup --> Material_Output
+```mermaid
+classDiagram
+class MyGroup{
+    +String type: Group
+}
+class Material_Output{
+    +String type: Output
+}
+MyGroup --> Material_Output
+%% MyGroup is a node group containing 3 nodes
 ```
 
 ## 技術詳細
@@ -173,9 +157,9 @@ graph TD;
 1. **トラバース** - ノードエディター内のアクティブなノードツリーを走査
 2. **抽出** - ノード情報（名前、タイプ、ソケット）を抽出
 3. **マッピング** - リンクを介してノード間の接続をマッピング
-4. **生成** - `graph TD`（トップダウン）形式のMermaid構文を生成
-5. **処理** - ネストされたノードグループをサブグラフとして再帰的に処理
-6. **サニタイズ** - 有効なMermaid IDのためにノード名をサニタイズ
+4. **生成** - `classDiagram`形式のMermaid構文を生成
+5. **処理** - ネストされたノードグループをコメントで処理
+6. **サニタイズ** - 有効なMermaidクラス名のためにノード名をサニタイズ
 
 ### ファイル出力
 

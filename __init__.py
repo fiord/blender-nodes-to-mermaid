@@ -13,10 +13,10 @@ import traceback
 bl_info = {
     "name": "Node to Mermaid Converter",
     "author": "blender-nodes-to-mermaid contributors",
-    "version": (1, 2, 0),
+    "version": (1, 3, 0),
     "blender": (5, 0, 0),
     "location": "Node Editor > Sidebar > Mermaid",
-    "description": "Export node trees to Mermaid diagram format with parameters",
+    "description": "Export node trees to Mermaid class diagram format with parameters",
     "category": "Node",
 }
 
@@ -31,18 +31,6 @@ except ImportError:
 
 # Configuration constants
 MAX_DISPLAYED_PARAMETERS = 5  # Maximum number of parameters to display in node labels
-
-def sanitize_id(name, prefix=''):
-    """Sanitize node name to create a valid Mermaid ID."""
-    # Replace spaces and special characters
-    sanitized = name.replace(' ', '_').replace('.', '_').replace('-', '_')
-    # Remove any other non-alphanumeric characters except underscore
-    sanitized = ''.join(c for c in sanitized if c.isalnum() or c == '_')
-    # Ensure we have a valid ID (not empty)
-    if not sanitized:
-        sanitized = 'node'
-    return prefix + sanitized
-
 
 def sanitize_class_name(name):
     """Sanitize node name for use as a class name in class diagrams."""
@@ -124,165 +112,6 @@ def get_node_parameters(node):
         print(f"Warning: Could not extract all parameters from node: {e}")
     
     return params
-
-
-def format_node_label(node, node_type):
-    """
-    Format a node label with its type and important parameters.
-    
-    Args:
-        node: The Blender node
-        node_type: The simplified node type name
-        
-    Returns:
-        Formatted label string
-    """
-    # Start with basic node info
-    label_parts = [f"{node.name} ({node_type})"]
-    
-    # Get node parameters
-    params = get_node_parameters(node)
-    
-    # Format parameters for display (limit to most important ones)
-    if params:
-        param_lines = []
-        # Limit to MAX_DISPLAYED_PARAMETERS to avoid overly long labels
-        important_params = list(params.items())[:MAX_DISPLAYED_PARAMETERS]
-        
-        for key, value in important_params:
-            # Format the value based on type
-            if isinstance(value, float):
-                # Round floats to 3 decimal places
-                value_str = f"{value:.3f}"
-            elif isinstance(value, (tuple, list)):
-                # Format tuples/lists nicely
-                formatted_values = [f"{v:.3f}" if isinstance(v, float) else str(v) for v in value]
-                value_str = f"({', '.join(formatted_values)})"
-            else:
-                value_str = str(value)
-            
-            param_lines.append(f"{key}: {value_str}")
-        
-        if param_lines:
-            # Add parameters to label
-            label_parts.append("---")
-            label_parts.extend(param_lines)
-    
-    # Join all parts with newline (Mermaid supports multiline labels)
-    return "\\n".join(label_parts)
-
-
-def build_mermaid(node_tree, prefix='', indent=0, include_parameters=True):
-    """
-    Recursively build Mermaid code from a node tree.
-    
-    Args:
-        node_tree: The Blender node tree to convert
-        prefix: Prefix for node IDs (used in subgraphs)
-        indent: Current indentation level
-        include_parameters: Whether to include node parameters in labels
-        
-    Returns:
-        String containing Mermaid diagram code
-    """
-    if node_tree is None:
-        return ""
-    
-    mermaid_lines = []
-    indent_str = "    " * indent
-    
-    # Create a mapping of nodes to their IDs
-    node_ids = {}
-    id_counters = {}  # Track ID usage to handle collisions
-    
-    # First pass: Create all node definitions
-    for node in node_tree.nodes:
-        base_id = sanitize_id(node.name, prefix)
-        
-        # Handle ID collisions by adding a counter suffix
-        if base_id in id_counters:
-            id_counters[base_id] += 1
-            node_id = f"{base_id}_{id_counters[base_id]}"
-        else:
-            id_counters[base_id] = 0
-            node_id = base_id
-        
-        node_ids[node.name] = node_id
-        
-        # Get node type name (remove 'ShaderNode', 'CompositorNode' etc prefixes for cleaner display)
-        node_type = node.bl_idname
-        for prefix_to_remove in ['ShaderNode', 'CompositorNode', 'GeometryNode', 'TextureNode', 'Node']:
-            if node_type.startswith(prefix_to_remove):
-                node_type = node_type[len(prefix_to_remove):]
-                break
-        
-        # Create node definition with parameters if requested
-        if include_parameters:
-            node_label = format_node_label(node, node_type)
-        else:
-            node_label = f"{node.name} ({node_type})"
-        
-        mermaid_lines.append(f"{indent_str}{node_id}[\"{node_label}\"]")
-    
-    # Second pass: Create links between nodes
-    for link in node_tree.links:
-        try:
-            # Skip invalid links
-            if not link.is_valid:
-                continue
-                
-            from_node = link.from_node
-            to_node = link.to_node
-            
-            # Skip if nodes don't exist in our mapping
-            if from_node.name not in node_ids or to_node.name not in node_ids:
-                continue
-            
-            from_id = node_ids[from_node.name]
-            to_id = node_ids[to_node.name]
-            
-            # Get socket names for the link label
-            from_socket = link.from_socket.name
-            to_socket = link.to_socket.name
-            
-            # Create link with socket names as label
-            if from_socket and to_socket:
-                link_label = f"{from_socket} -> {to_socket}"
-            elif from_socket:
-                link_label = from_socket
-            elif to_socket:
-                link_label = to_socket
-            else:
-                link_label = ""
-            
-            if link_label:
-                mermaid_lines.append(f"{indent_str}{from_id} -->|{link_label}| {to_id}")
-            else:
-                mermaid_lines.append(f"{indent_str}{from_id} --> {to_id}")
-                
-        except Exception as e:
-            # Skip problematic links
-            print(f"Warning: Skipped link due to error: {e}")
-            continue
-    
-    # Third pass: Handle group nodes recursively
-    for node in node_tree.nodes:
-        # Check if this is a group node with a node tree
-        if hasattr(node, 'node_tree') and node.node_tree is not None:
-            node_id = node_ids[node.name]
-            group_name = node.name
-            
-            # Create subgraph for the group
-            mermaid_lines.append(f"{indent_str}subgraph {node_id}[\"Group: {group_name}\"]")
-            
-            # Recursively process the group's node tree
-            group_prefix = node_id + "_"
-            group_content = build_mermaid(node.node_tree, group_prefix, indent + 1, include_parameters)
-            mermaid_lines.append(group_content)
-            
-            mermaid_lines.append(f"{indent_str}end")
-    
-    return "\n".join(mermaid_lines)
 
 
 def build_class_diagram(node_tree, include_parameters=True):
@@ -441,16 +270,6 @@ class NODE_OT_export_to_mermaid(bpy.types.Operator):
     bl_options = {'REGISTER', 'UNDO'}
     
     # Properties for export options
-    diagram_format: bpy.props.EnumProperty(
-        name="Diagram Format",
-        description="Choose the Mermaid diagram format",
-        items=[
-            ('FLOWCHART', "Flowchart", "Traditional flowchart (graph TD) - shows node flow"),
-            ('CLASS', "Class Diagram", "Class diagram - better for showing properties and structure"),
-        ],
-        default='CLASS'
-    )
-    
     export_to_file: bpy.props.BoolProperty(
         name="Save to File",
         description="Save the Mermaid code to a file",
@@ -497,12 +316,9 @@ class NODE_OT_export_to_mermaid(bpy.types.Operator):
         if tree_type not in supported_types:
             self.report({'WARNING'}, f"Node tree type '{tree_type}' may not be fully supported")
         
-        # Build the Mermaid diagram
+        # Build the Mermaid class diagram
         try:
-            if self.diagram_format == 'CLASS':
-                mermaid_code = "classDiagram\n" + build_class_diagram(node_tree, include_parameters=self.include_parameters)
-            else:  # FLOWCHART
-                mermaid_code = "graph TD;\n" + build_mermaid(node_tree, include_parameters=self.include_parameters)
+            mermaid_code = "classDiagram\n" + build_class_diagram(node_tree, include_parameters=self.include_parameters)
             
             # Print to console
             print("\n" + "="*50)
@@ -556,7 +372,6 @@ class NODE_OT_export_to_mermaid(bpy.types.Operator):
     def draw(self, context):
         """Draw the operator properties in the dialog."""
         layout = self.layout
-        layout.prop(self, "diagram_format")
         layout.prop(self, "include_parameters")
         layout.separator()
         layout.prop(self, "export_to_file")
