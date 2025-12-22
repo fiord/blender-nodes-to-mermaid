@@ -1,7 +1,7 @@
 """
-Blender Add-on: Node Tree to Mermaid Converter
+Blender Add-on: Node Tree to Diagram Converter
 
-This add-on converts Blender's node trees to Mermaid diagram format for easy sharing and documentation.
+This add-on converts Blender's node trees to Mermaid or PlantUML diagram formats for easy sharing and documentation.
 It supports all main node tree types: Shader, Compositor, Texture, and Geometry.
 """
 
@@ -11,12 +11,12 @@ import tempfile
 import traceback
 
 bl_info = {
-    "name": "Node to Mermaid Converter",
+    "name": "Node to Diagram Converter",
     "author": "blender-nodes-to-mermaid contributors",
-    "version": (1, 4, 0),
+    "version": (1, 5, 0),
     "blender": (5, 0, 0),
     "location": "Node Editor > Sidebar > Mermaid",
-    "description": "Export node trees to Mermaid class diagram format with parameters",
+    "description": "Export node trees to Mermaid or PlantUML diagram formats with parameters",
     "category": "Node",
 }
 
@@ -263,22 +263,175 @@ def build_class_diagram(node_tree):
     return "\n".join(mermaid_lines)
 
 
+def build_plantuml_state_diagram(node_tree):
+    """
+    Build PlantUML state diagram from a node tree.
+    This format represents nodes as states with transitions between them.
+    
+    Node parameters are automatically included for complete documentation.
+    
+    Args:
+        node_tree: The Blender node tree to convert
+        
+    Returns:
+        String containing PlantUML state diagram code
+    """
+    if node_tree is None:
+        return ""
+    
+    plantuml_lines = []
+    
+    # Create a mapping of nodes to their state IDs
+    node_states = {}
+    state_counters = {}
+    
+    # First pass: Create state definitions for each node
+    for node in node_tree.nodes:
+        # Create unique state name
+        base_state_name = sanitize_class_name(node.name)
+        
+        # Handle state name collisions
+        if base_state_name in state_counters:
+            state_counters[base_state_name] += 1
+            state_name = f"{base_state_name}_{state_counters[base_state_name]}"
+        else:
+            state_counters[base_state_name] = 0
+            state_name = base_state_name
+        
+        node_states[node.name] = state_name
+        
+        # Get node type name
+        node_type = node.bl_idname
+        for prefix_to_remove in ['ShaderNode', 'CompositorNode', 'GeometryNode', 'TextureNode', 'Node']:
+            if node_type.startswith(prefix_to_remove):
+                node_type = node_type[len(prefix_to_remove):]
+                break
+        
+        # Create state definition with description
+        state_description_lines = []
+        state_description_lines.append(f"Type: {node_type}")
+        
+        # Add parameters
+        params = get_node_parameters(node)
+        if params:
+            # Limit parameters
+            important_params = list(params.items())[:MAX_DISPLAYED_PARAMETERS]
+            
+            for key, value in important_params:
+                # Format value
+                if isinstance(value, bool):
+                    value_str = str(value)
+                elif isinstance(value, int):
+                    value_str = str(value)
+                elif isinstance(value, float):
+                    value_str = f"{value:.3f}"
+                elif isinstance(value, str):
+                    value_str = f'"{value}"'
+                elif isinstance(value, (tuple, list)):
+                    formatted_values = [f"{v:.3f}" if isinstance(v, float) else str(v) for v in value]
+                    value_str = f"({', '.join(formatted_values)})"
+                else:
+                    value_str = str(value)
+                
+                state_description_lines.append(f"{key}: {value_str}")
+        
+        # Add input/output socket counts
+        if hasattr(node, 'inputs') and len(node.inputs) > 0:
+            state_description_lines.append(f"Inputs: {len(node.inputs)}")
+        if hasattr(node, 'outputs') and len(node.outputs) > 0:
+            state_description_lines.append(f"Outputs: {len(node.outputs)}")
+        
+        # Create state with description
+        if len(state_description_lines) > 0:
+            plantuml_lines.append(f"state {state_name} {{")
+            for desc_line in state_description_lines:
+                plantuml_lines.append(f"  {desc_line}")
+            plantuml_lines.append("}")
+        else:
+            plantuml_lines.append(f"state {state_name}")
+        
+        plantuml_lines.append("")  # Add blank line for readability
+    
+    # Second pass: Create transitions (connections between nodes)
+    for link in node_tree.links:
+        try:
+            if not link.is_valid:
+                continue
+            
+            from_node = link.from_node
+            to_node = link.to_node
+            
+            if from_node.name not in node_states or to_node.name not in node_states:
+                continue
+            
+            from_state = node_states[from_node.name]
+            to_state = node_states[to_node.name]
+            
+            # Get socket names for the transition label
+            from_socket = link.from_socket.name
+            to_socket = link.to_socket.name
+            
+            # Create transition with label
+            if from_socket and to_socket:
+                label = f"{from_socket} → {to_socket}"
+            elif from_socket:
+                label = from_socket
+            elif to_socket:
+                label = to_socket
+            else:
+                label = ""
+            
+            # Use transition with label
+            if label:
+                plantuml_lines.append(f"{from_state} --> {to_state} : {label}")
+            else:
+                plantuml_lines.append(f"{from_state} --> {to_state}")
+                
+        except Exception as e:
+            print(f"Warning: Skipped link in PlantUML diagram: {e}")
+            continue
+    
+    # Third pass: Handle node groups
+    for node in node_tree.nodes:
+        if hasattr(node, 'node_tree') and node.node_tree is not None:
+            node_state = node_states.get(node.name)
+            if node_state:
+                # Add a note about the group content
+                plantuml_lines.append("")
+                plantuml_lines.append(f"note right of {node_state}")
+                plantuml_lines.append(f"  Node group containing")
+                plantuml_lines.append(f"  {len(node.node_tree.nodes)} nodes")
+                plantuml_lines.append("end note")
+    
+    return "\n".join(plantuml_lines)
+
+
 class NODE_OT_export_to_mermaid(bpy.types.Operator):
-    """Export the current node tree to Mermaid diagram format"""
+    """Export the current node tree to Mermaid or PlantUML diagram format"""
     bl_idname = "node.export_to_mermaid"
-    bl_label = "Export to Mermaid"
+    bl_label = "Export to Diagram"
     bl_options = {'REGISTER', 'UNDO'}
     
     # Properties for export options
+    diagram_format: bpy.props.EnumProperty(
+        name="Format",
+        description="Choose the diagram format",
+        items=[
+            ('MERMAID', "Mermaid", "Export as Mermaid class diagram"),
+            ('PLANTUML', "PlantUML", "Export as PlantUML state diagram"),
+        ],
+        default='MERMAID'
+    )
+    
     export_to_file: bpy.props.BoolProperty(
         name="Save to File",
-        description="Save the Mermaid code to a file",
+        description="Save the diagram code to a file",
         default=True
     )
     
     copy_to_clipboard: bpy.props.BoolProperty(
         name="Copy to Clipboard",
-        description="Copy the Mermaid code to clipboard (requires pyperclip)",
+        description="Copy the diagram code to clipboard (requires pyperclip)",
         default=False
     )
     
@@ -310,15 +463,22 @@ class NODE_OT_export_to_mermaid(bpy.types.Operator):
         if tree_type not in supported_types:
             self.report({'WARNING'}, f"Node tree type '{tree_type}' may not be fully supported")
         
-        # Build the Mermaid class diagram
+        # Build the diagram based on selected format
         try:
-            mermaid_code = "classDiagram\n" + build_class_diagram(node_tree)
+            if self.diagram_format == 'MERMAID':
+                diagram_code = "classDiagram\n" + build_class_diagram(node_tree)
+                file_extension = "mmd"
+                format_name = "Mermaid"
+            else:  # PLANTUML
+                diagram_code = "@startuml\n" + build_plantuml_state_diagram(node_tree) + "\n@enduml"
+                file_extension = "puml"
+                format_name = "PlantUML"
             
             # Print to console
             print("\n" + "="*50)
-            print("Mermaid Diagram Code:")
+            print(f"{format_name} Diagram Code:")
             print("="*50)
-            print(mermaid_code)
+            print(diagram_code)
             print("="*50 + "\n")
             
             # Save to file if requested
@@ -327,15 +487,15 @@ class NODE_OT_export_to_mermaid(bpy.types.Operator):
                 if bpy.data.filepath:
                     # Save next to the .blend file
                     blend_dir = os.path.dirname(bpy.data.filepath)
-                    output_path = os.path.join(blend_dir, "node_tree.mmd")
+                    output_path = os.path.join(blend_dir, f"node_tree.{file_extension}")
                 else:
                     # Save to temp directory if blend file is not saved
-                    output_path = os.path.join(tempfile.gettempdir(), "node_tree.mmd")
+                    output_path = os.path.join(tempfile.gettempdir(), f"node_tree.{file_extension}")
                 
                 try:
                     with open(output_path, 'w', encoding='utf-8') as f:
-                        f.write(mermaid_code)
-                    self.report({'INFO'}, f"Mermaid code saved to: {output_path}")
+                        f.write(diagram_code)
+                    self.report({'INFO'}, f"{format_name} code saved to: {output_path}")
                 except Exception as e:
                     self.report({'ERROR'}, f"Failed to save file: {e}")
                     return {'CANCELLED'}
@@ -344,18 +504,18 @@ class NODE_OT_export_to_mermaid(bpy.types.Operator):
             if self.copy_to_clipboard:
                 if HAS_PYPERCLIP:
                     try:
-                        pyperclip.copy(mermaid_code)
-                        self.report({'INFO'}, "Mermaid code copied to clipboard")
+                        pyperclip.copy(diagram_code)
+                        self.report({'INFO'}, f"{format_name} code copied to clipboard")
                     except Exception as e:
                         self.report({'WARNING'}, f"Could not copy to clipboard: {e}")
                 else:
                     self.report({'WARNING'}, "pyperclip not available. Install it to use clipboard feature.")
             
-            self.report({'INFO'}, "Node tree exported to Mermaid format successfully")
+            self.report({'INFO'}, f"Node tree exported to {format_name} format successfully")
             return {'FINISHED'}
             
         except Exception as e:
-            self.report({'ERROR'}, f"Failed to generate Mermaid code: {e}")
+            self.report({'ERROR'}, f"Failed to generate diagram code: {e}")
             traceback.print_exc()
             return {'CANCELLED'}
     
@@ -366,13 +526,14 @@ class NODE_OT_export_to_mermaid(bpy.types.Operator):
     def draw(self, context):
         """Draw the operator properties in the dialog."""
         layout = self.layout
+        layout.prop(self, "diagram_format")
         layout.prop(self, "export_to_file")
         layout.prop(self, "copy_to_clipboard")
 
 
 class NODE_PT_mermaid_panel(bpy.types.Panel):
-    """Panel in the Node Editor sidebar for Mermaid export."""
-    bl_label = "Mermaid Export"
+    """Panel in the Node Editor sidebar for diagram export."""
+    bl_label = "Diagram Export"
     bl_idname = "NODE_PT_mermaid_panel"
     bl_space_type = 'NODE_EDITOR'
     bl_region_type = 'UI'
@@ -403,6 +564,12 @@ class NODE_PT_mermaid_panel(bpy.types.Panel):
         layout.operator("node.export_to_mermaid", icon='EXPORT')
         
         # Info text
+        layout.separator()
+        box = layout.box()
+        box.label(text="Supported Formats:", icon='INFO')
+        box.label(text="• Mermaid Class Diagram")
+        box.label(text="• PlantUML State Diagram")
+        
         layout.separator()
         box = layout.box()
         box.label(text="Supported Node Trees:", icon='INFO')
