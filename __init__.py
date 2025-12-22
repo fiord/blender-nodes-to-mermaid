@@ -13,7 +13,7 @@ import traceback
 bl_info = {
     "name": "Node to Mermaid Converter",
     "author": "blender-nodes-to-mermaid contributors",
-    "version": (1, 1, 0),
+    "version": (1, 2, 0),
     "blender": (5, 0, 0),
     "location": "Node Editor > Sidebar > Mermaid",
     "description": "Export node trees to Mermaid diagram format with parameters",
