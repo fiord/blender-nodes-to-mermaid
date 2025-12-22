@@ -13,7 +13,7 @@ import traceback
 bl_info = {
     "name": "Node to Mermaid Converter",
     "author": "blender-nodes-to-mermaid contributors",
-    "version": (1, 3, 0),
+    "version": (1, 4, 0),
     "blender": (5, 0, 0),
     "location": "Node Editor > Sidebar > Mermaid",
     "description": "Export node trees to Mermaid class diagram format with parameters",
@@ -114,14 +114,13 @@ def get_node_parameters(node):
     return params
 
 
-def build_class_diagram(node_tree, include_parameters=True):
+def build_class_diagram(node_tree):
     """
     Build Mermaid class diagram from a node tree.
     This format better represents nodes with their properties.
     
     Args:
         node_tree: The Blender node tree to convert
-        include_parameters: Whether to include node parameters in class definitions
         
     Returns:
         String containing Mermaid class diagram code
@@ -163,10 +162,9 @@ def build_class_diagram(node_tree, include_parameters=True):
         # Add node type as a property
         mermaid_lines.append(f"    +String type: {node_type}")
         
-        # Add parameters if requested
-        if include_parameters:
-            params = get_node_parameters(node)
-            if params:
+        # Add parameters
+        params = get_node_parameters(node)
+        if params:
                 # Limit parameters
                 important_params = list(params.items())[:MAX_DISPLAYED_PARAMETERS]
                 
@@ -282,12 +280,6 @@ class NODE_OT_export_to_mermaid(bpy.types.Operator):
         default=False
     )
     
-    include_parameters: bpy.props.BoolProperty(
-        name="Include Node Parameters",
-        description="Include node parameters and values in the diagram for complete documentation",
-        default=True
-    )
-    
     @classmethod
     def poll(cls, context):
         """Check if we're in a node editor with a valid node tree."""
@@ -318,7 +310,7 @@ class NODE_OT_export_to_mermaid(bpy.types.Operator):
         
         # Build the Mermaid class diagram
         try:
-            mermaid_code = "classDiagram\n" + build_class_diagram(node_tree, include_parameters=self.include_parameters)
+            mermaid_code = "classDiagram\n" + build_class_diagram(node_tree)
             
             # Print to console
             print("\n" + "="*50)
@@ -372,8 +364,6 @@ class NODE_OT_export_to_mermaid(bpy.types.Operator):
     def draw(self, context):
         """Draw the operator properties in the dialog."""
         layout = self.layout
-        layout.prop(self, "include_parameters")
-        layout.separator()
         layout.prop(self, "export_to_file")
         layout.prop(self, "copy_to_clipboard")
 

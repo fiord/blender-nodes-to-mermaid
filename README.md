@@ -8,18 +8,17 @@ A Blender add-on that exports node trees to [Mermaid](https://mermaid.js.org/) d
 ## Features
 
 - 🎨 **Export any node tree** to Mermaid class diagram format
-- 📊 **Include node parameters** - Export with complete parameter information for full documentation
+- 📊 **Automatic parameter inclusion** - Always exports complete parameter information for full documentation
 - 🔄 **Supports all major node types**:
   - Shader Nodes
   - Compositor Nodes
   - Geometry Nodes
   - Texture Nodes
 - 📦 **Handles nested node groups** with comments
-- 💾 **Multiple export options**:
+- 💾 **Export options**:
   - Save to `.mmd` file
   - Print to console
   - Copy to clipboard (optional)
-  - Toggle parameter inclusion
 - 🚀 **Zero external dependencies** - pure `bpy` implementation
 - 🎯 **Simple UI** integration in Node Editor sidebar
 
@@ -54,16 +53,16 @@ A Blender add-on that exports node trees to [Mermaid](https://mermaid.js.org/) d
 4. Navigate to the **Mermaid** tab
 5. Click the **Export to Mermaid** button
 6. Configure export options in the dialog:
-   - ✅ **Include Node Parameters**: Include node parameters and values for complete documentation (recommended for sharing)
    - ✅ **Save to File**: Saves `.mmd` file next to your `.blend` file
    - ☐ **Copy to Clipboard**: Copies code to clipboard (requires `pyperclip`)
 7. Click **OK** to export
 
 ### Export Options Explained
 
-- **Include Node Parameters**: When enabled, exports all important node parameters (values, settings, colors, etc.) needed to recreate the node setup. This is essential for sharing complete node graphs with others.
 - **Save to File**: Exports the diagram to a `.mmd` file in the same directory as your `.blend` file
 - **Copy to Clipboard**: Copies the Mermaid code to your system clipboard for quick pasting
+
+Node parameters are always included in the export to ensure complete documentation.
 
 ### Output Example
 
