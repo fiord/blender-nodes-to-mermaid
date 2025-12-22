@@ -7,6 +7,14 @@ It supports all main node tree types: Shader, Compositor, Texture, and Geometry.
 
 import bpy
 import os
+import tempfile
+
+# Try to import optional dependencies
+try:
+    import pyperclip
+    HAS_PYPERCLIP = True
+except ImportError:
+    HAS_PYPERCLIP = False
 
 bl_info = {
     "name": "Node to Mermaid Converter",
@@ -25,6 +33,9 @@ def sanitize_id(name, prefix=''):
     sanitized = name.replace(' ', '_').replace('.', '_').replace('-', '_')
     # Remove any other non-alphanumeric characters except underscore
     sanitized = ''.join(c for c in sanitized if c.isalnum() or c == '_')
+    # Ensure we have a valid ID (not empty)
+    if not sanitized:
+        sanitized = 'node'
     return prefix + sanitized
 
 
@@ -48,10 +59,20 @@ def build_mermaid(node_tree, prefix='', indent=0):
     
     # Create a mapping of nodes to their IDs
     node_ids = {}
+    id_counters = {}  # Track ID usage to handle collisions
     
     # First pass: Create all node definitions
     for node in node_tree.nodes:
-        node_id = sanitize_id(node.name, prefix)
+        base_id = sanitize_id(node.name, prefix)
+        
+        # Handle ID collisions by adding a counter suffix
+        if base_id in id_counters:
+            id_counters[base_id] += 1
+            node_id = f"{base_id}_{id_counters[base_id]}"
+        else:
+            id_counters[base_id] = 0
+            node_id = base_id
+        
         node_ids[node.name] = node_id
         
         # Get node type name (remove 'ShaderNode', 'CompositorNode' etc prefixes for cleaner display)
@@ -88,7 +109,7 @@ def build_mermaid(node_tree, prefix='', indent=0):
             
             # Create link with socket names as label
             if from_socket and to_socket:
-                link_label = f"{from_socket} → {to_socket}"
+                link_label = f"{from_socket} -> {to_socket}"
             elif from_socket:
                 link_label = from_socket
             elif to_socket:
@@ -193,7 +214,6 @@ class NODE_OT_export_to_mermaid(bpy.types.Operator):
                     output_path = os.path.join(blend_dir, "node_tree.mmd")
                 else:
                     # Save to temp directory if blend file is not saved
-                    import tempfile
                     output_path = os.path.join(tempfile.gettempdir(), "node_tree.mmd")
                 
                 try:
@@ -206,14 +226,14 @@ class NODE_OT_export_to_mermaid(bpy.types.Operator):
             
             # Copy to clipboard if requested (optional feature)
             if self.copy_to_clipboard:
-                try:
-                    import pyperclip
-                    pyperclip.copy(mermaid_code)
-                    self.report({'INFO'}, "Mermaid code copied to clipboard")
-                except ImportError:
+                if HAS_PYPERCLIP:
+                    try:
+                        pyperclip.copy(mermaid_code)
+                        self.report({'INFO'}, "Mermaid code copied to clipboard")
+                    except Exception as e:
+                        self.report({'WARNING'}, f"Could not copy to clipboard: {e}")
+                else:
                     self.report({'WARNING'}, "pyperclip not available. Install it to use clipboard feature.")
-                except Exception as e:
-                    self.report({'WARNING'}, f"Could not copy to clipboard: {e}")
             
             self.report({'INFO'}, "Node tree exported to Mermaid format successfully")
             return {'FINISHED'}
