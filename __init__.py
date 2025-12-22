@@ -31,6 +31,7 @@ except ImportError:
 
 # Configuration constants
 MAX_DISPLAYED_PARAMETERS = 5  # Maximum number of parameters to display in node labels
+NOTE_POSITIONS = ['right', 'left', 'top', 'bottom']  # Positions for PlantUML notes
 
 def sanitize_identifier(name):
     """Sanitize node name for use as an identifier in diagrams (class names, state names, etc.)."""
@@ -341,14 +342,11 @@ def build_plantuml_state_diagram(node_tree):
         if hasattr(node, 'outputs') and len(node.outputs) > 0:
             state_description_lines.append(f"Outputs: {len(node.outputs)}")
         
-        # Create state with description
-        if len(state_description_lines) > 0:
-            plantuml_lines.append(f"state {state_name} {{")
-            for desc_line in state_description_lines:
-                plantuml_lines.append(f"  {desc_line}")
-            plantuml_lines.append("}")
-        else:
-            plantuml_lines.append(f"state {state_name}")
+        # Create state with description (always has at least the Type field)
+        plantuml_lines.append(f"state {state_name} {{")
+        for desc_line in state_description_lines:
+            plantuml_lines.append(f"  {desc_line}")
+        plantuml_lines.append("}")
         
         plantuml_lines.append("")  # Add blank line for readability
     
@@ -392,7 +390,6 @@ def build_plantuml_state_diagram(node_tree):
             continue
     
     # Third pass: Handle node groups
-    note_positions = ['right', 'left', 'top', 'bottom']
     note_position_index = 0
     
     for node in node_tree.nodes:
@@ -401,7 +398,7 @@ def build_plantuml_state_diagram(node_tree):
             if node_state:
                 # Add a note about the group content
                 # Cycle through note positions to avoid overlapping
-                position = note_positions[note_position_index % len(note_positions)]
+                position = NOTE_POSITIONS[note_position_index % len(NOTE_POSITIONS)]
                 note_position_index += 1
                 
                 plantuml_lines.append("")
