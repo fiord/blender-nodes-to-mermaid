@@ -253,16 +253,32 @@ You can view the generated PlantUML diagrams using:
 
 ```
 blender-nodes-to-mermaid/
-├── __init__.py          # Main add-on code
-├── README.md            # This file
-├── LICENSE              # MIT License
-└── .gitignore          # Git ignore rules
+├── __init__.py              # Main add-on entry point and UI
+├── diagram_utils.py         # Common utilities for node information extraction
+├── mermaid_generator.py     # Mermaid class diagram generation
+├── plantuml_generator.py    # PlantUML state diagram generation
+├── README.md                # This file (English)
+├── README_ja.md             # Japanese documentation
+├── LICENSE                  # MIT License
+└── .gitignore              # Git ignore rules
 ```
 
 ### Code Overview
 
-- `build_class_diagram()`: Converts node tree to Mermaid class diagram syntax
-- `build_plantuml_state_diagram()`: Converts node tree to PlantUML state diagram syntax
+**Core Modules:**
+- `diagram_utils.py`: Shared functions for extracting and formatting node information
+  - `sanitize_identifier()`: Sanitizes node names for diagram identifiers
+  - `get_node_parameters()`: Extracts parameters from nodes
+  - `get_node_type_name()`: Gets clean node type names
+  - `format_parameter_value()`: Formats parameter values with type information
+
+- `mermaid_generator.py`: Mermaid class diagram generation
+  - `build_class_diagram()`: Converts node tree to Mermaid class diagram syntax
+
+- `plantuml_generator.py`: PlantUML state diagram generation
+  - `build_plantuml_state_diagram()`: Converts node tree to PlantUML state diagram syntax
+
+**UI Components:**
 - `NODE_OT_export_to_mermaid`: Operator for export functionality with format selection
 - `NODE_PT_mermaid_panel`: UI panel in Node Editor sidebar
 

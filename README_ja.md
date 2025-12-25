@@ -253,17 +253,32 @@ Principled_BSDF --> Material_Output : BSDF → Surface
 
 ```
 blender-nodes-to-mermaid/
-├── __init__.py          # メインアドオンコード
-├── README.md            # このファイル（英語版）
-├── README_ja.md         # このファイル（日本語版）
-├── LICENSE              # MITライセンス
-└── .gitignore          # Git無視ルール
+├── __init__.py              # メインアドオンエントリーポイントとUI
+├── diagram_utils.py         # ノード情報抽出のための共通ユーティリティ
+├── mermaid_generator.py     # Mermaidクラス図生成
+├── plantuml_generator.py    # PlantUMLステートダイアグラム生成
+├── README.md                # このファイル（英語版）
+├── README_ja.md             # このファイル（日本語版）
+├── LICENSE                  # MITライセンス
+└── .gitignore              # Git無視ルール
 ```
 
 ### コード概要
 
-- `build_class_diagram()`: ノードツリーをMermaidクラス図構文に変換
-- `build_plantuml_state_diagram()`: ノードツリーをPlantUMLステートダイアグラム構文に変換
+**コアモジュール:**
+- `diagram_utils.py`: ノード情報の抽出とフォーマット用の共有関数
+  - `sanitize_identifier()`: ダイアグラム識別子用にノード名をサニタイズ
+  - `get_node_parameters()`: ノードからパラメータを抽出
+  - `get_node_type_name()`: クリーンなノードタイプ名を取得
+  - `format_parameter_value()`: 型情報付きでパラメータ値をフォーマット
+
+- `mermaid_generator.py`: Mermaidクラス図生成
+  - `build_class_diagram()`: ノードツリーをMermaidクラス図構文に変換
+
+- `plantuml_generator.py`: PlantUMLステートダイアグラム生成
+  - `build_plantuml_state_diagram()`: ノードツリーをPlantUMLステートダイアグラム構文に変換
+
+**UIコンポーネント:**
 - `NODE_OT_export_to_mermaid`: 形式選択機能を持つエクスポートのためのオペレーター
 - `NODE_PT_mermaid_panel`: ノードエディターサイドバーのUIパネル
 
