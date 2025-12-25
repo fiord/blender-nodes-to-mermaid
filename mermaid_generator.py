@@ -62,21 +62,21 @@ def build_class_diagram(node_tree):
         # Add parameters
         params = get_node_parameters(node)
         if params:
-                # Limit parameters
-                important_params = list(params.items())[:MAX_DISPLAYED_PARAMETERS]
+            # Limit parameters
+            important_params = list(params.items())[:MAX_DISPLAYED_PARAMETERS]
+            
+            for key, value in important_params:
+                # Determine type and format value
+                param_type, value_str = format_parameter_value(value)
                 
-                for key, value in important_params:
-                    # Determine type and format value
-                    param_type, value_str = format_parameter_value(value)
-                    
-                    # Add parameter line with type and value
-                    mermaid_lines.append(f"    +{param_type} {key}: {value_str}")
+                # Add parameter line with type and value
+                mermaid_lines.append(f"    +{param_type} {key}: {value_str}")
         
         # Add input/output socket counts as properties
         if hasattr(node, 'inputs') and len(node.inputs) > 0:
-            mermaid_lines.append(f"    +inputs: {len(node.inputs)}")
+            mermaid_lines.append(f"    +Integer inputs: {len(node.inputs)}")
         if hasattr(node, 'outputs') and len(node.outputs) > 0:
-            mermaid_lines.append(f"    +outputs: {len(node.outputs)}")
+            mermaid_lines.append(f"    +Integer outputs: {len(node.outputs)}")
         
         # Close class definition
         mermaid_lines.append("}")

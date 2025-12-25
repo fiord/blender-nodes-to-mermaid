@@ -75,9 +75,9 @@ def build_plantuml_state_diagram(node_tree):
         
         # Add input/output socket counts
         if hasattr(node, 'inputs') and len(node.inputs) > 0:
-            state_description_lines.append(f"+inputs: {len(node.inputs)}")
+            state_description_lines.append(f"+Integer inputs: {len(node.inputs)}")
         if hasattr(node, 'outputs') and len(node.outputs) > 0:
-            state_description_lines.append(f"+outputs: {len(node.outputs)}")
+            state_description_lines.append(f"+Integer outputs: {len(node.outputs)}")
         
         # Create state with description (always has at least the Type field)
         plantuml_lines.append(f"state {state_name} {{")
