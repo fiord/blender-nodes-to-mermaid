@@ -310,7 +310,7 @@ def build_plantuml_state_diagram(node_tree):
         
         # Create state definition with description
         state_description_lines = []
-        state_description_lines.append(f"Type: {node_type}")
+        state_description_lines.append(f"+String type: {node_type}")
         
         # Add parameters
         params = get_node_parameters(node)
@@ -319,28 +319,35 @@ def build_plantuml_state_diagram(node_tree):
             important_params = list(params.items())[:MAX_DISPLAYED_PARAMETERS]
             
             for key, value in important_params:
-                # Format value
+                # Determine type and format value (matching Mermaid format)
                 if isinstance(value, bool):
+                    param_type = "Boolean"
                     value_str = str(value)
                 elif isinstance(value, int):
+                    param_type = "Integer"
                     value_str = str(value)
                 elif isinstance(value, float):
+                    param_type = "Float"
                     value_str = f"{value:.3f}"
                 elif isinstance(value, str):
+                    param_type = "String"
                     value_str = f'"{value}"'
                 elif isinstance(value, (tuple, list)):
+                    param_type = "Vector"
                     formatted_values = [f"{v:.3f}" if isinstance(v, float) else str(v) for v in value]
                     value_str = f"({', '.join(formatted_values)})"
                 else:
+                    param_type = "Object"
                     value_str = str(value)
                 
-                state_description_lines.append(f"{key}: {value_str}")
+                # Add parameter line with type annotation (matching Mermaid output)
+                state_description_lines.append(f"+{param_type} {key}: {value_str}")
         
         # Add input/output socket counts
         if hasattr(node, 'inputs') and len(node.inputs) > 0:
-            state_description_lines.append(f"Inputs: {len(node.inputs)}")
+            state_description_lines.append(f"+inputs: {len(node.inputs)}")
         if hasattr(node, 'outputs') and len(node.outputs) > 0:
-            state_description_lines.append(f"Outputs: {len(node.outputs)}")
+            state_description_lines.append(f"+outputs: {len(node.outputs)}")
         
         # Create state with description (always has at least the Type field)
         plantuml_lines.append(f"state {state_name} {{")
