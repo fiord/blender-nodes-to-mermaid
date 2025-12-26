@@ -22,6 +22,7 @@ def build_plantuml_state_diagram(node_tree):
     This format represents nodes as states with transitions between them.
     
     Node parameters are automatically included for complete documentation.
+    Supports Blender frame nodes to group related nodes visually.
     
     Args:
         node_tree: The Blender node tree to convert
@@ -38,8 +39,40 @@ def build_plantuml_state_diagram(node_tree):
     node_states = {}
     state_counters = {}
     
-    # First pass: Create state definitions for each node
+    # Identify frame nodes and their children
+    frame_nodes = {}  # frame_node -> list of child nodes
+    frame_states = {}  # frame_node.name -> state_id
+    
     for node in node_tree.nodes:
+        # Check if this is a frame node (NodeFrame type)
+        if hasattr(node, 'bl_idname') and 'Frame' in node.bl_idname:
+            frame_nodes[node.name] = []
+            
+    # Group nodes by their parent frame
+    nodes_by_frame = {None: []}  # None key for nodes without parent
+    for frame_name in frame_nodes.keys():
+        nodes_by_frame[frame_name] = []
+    
+    for node in node_tree.nodes:
+        # Skip frame nodes themselves in the main node list
+        if node.name in frame_nodes:
+            continue
+            
+        # Check if node has a parent frame
+        parent_frame = None
+        if hasattr(node, 'parent') and node.parent is not None:
+            parent_frame = node.parent.name
+            
+        if parent_frame in nodes_by_frame:
+            nodes_by_frame[parent_frame].append(node)
+        else:
+            nodes_by_frame[None].append(node)
+    
+    # Helper function to create state definition
+    def create_state_definition(node):
+        """Create state definition for a node"""
+        lines = []
+        
         # Create unique state name
         base_state_name = sanitize_identifier(node.name)
         
@@ -81,14 +114,42 @@ def build_plantuml_state_diagram(node_tree):
         
         # Create state with description using PlantUML state syntax
         state_label = node.name.replace('_', ' ')
-        plantuml_lines.append(f"state \"{state_label}\" as {state_name} {{")
+        lines.append(f"state \"{state_label}\" as {state_name} {{")
         for desc_line in state_description_lines:
-            plantuml_lines.append(f"  {state_name} : {desc_line}")
-        plantuml_lines.append("}")
+            lines.append(f"  {state_name} : {desc_line}")
+        lines.append("}")
         
-        plantuml_lines.append("")  # Add blank line for readability
+        return lines
+    
+    # First pass: Create frame states and their child nodes
+    for frame_name, child_nodes in nodes_by_frame.items():
+        if frame_name is None:
+            # Nodes without parent - create normally
+            for node in child_nodes:
+                plantuml_lines.extend(create_state_definition(node))
+                plantuml_lines.append("")
+        else:
+            # Create frame state
+            frame_state_name = sanitize_identifier(frame_name)
+            frame_states[frame_name] = frame_state_name
+            frame_label = frame_name.replace('_', ' ')
+            
+            plantuml_lines.append(f"state \"{frame_label}\" as {frame_state_name} {{")
+            plantuml_lines.append("")
+            
+            # Create child nodes inside the frame
+            for node in child_nodes:
+                child_lines = create_state_definition(node)
+                # Indent child state definitions
+                for line in child_lines:
+                    plantuml_lines.append(f"  {line}")
+                plantuml_lines.append("")
+            
+            plantuml_lines.append("}")
+            plantuml_lines.append("")
     
     # Second pass: Create transitions (connections between nodes)
+    # Note: Transitions are drawn from nodes, not from frames
     for link in node_tree.links:
         try:
             if not link.is_valid:
