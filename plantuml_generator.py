@@ -58,7 +58,7 @@ def build_plantuml_state_diagram(node_tree):
         
         # Create state definition with description
         state_description_lines = []
-        state_description_lines.append(f"+String type: {node_type}")
+        state_description_lines.append(f"type: {node_type}")
         
         # Add parameters
         params = get_node_parameters(node)
@@ -70,19 +70,20 @@ def build_plantuml_state_diagram(node_tree):
                 # Determine type and format value (matching Mermaid format)
                 param_type, value_str = format_parameter_value(value)
                 
-                # Add parameter line with type annotation (matching Mermaid output)
-                state_description_lines.append(f"+{param_type} {key}: {value_str}")
+                # Add parameter line (without type annotation for PlantUML)
+                state_description_lines.append(f"{key}: {value_str}")
         
         # Add input/output socket counts
         if hasattr(node, 'inputs') and len(node.inputs) > 0:
-            state_description_lines.append(f"+Integer inputs: {len(node.inputs)}")
+            state_description_lines.append(f"inputs: {len(node.inputs)}")
         if hasattr(node, 'outputs') and len(node.outputs) > 0:
-            state_description_lines.append(f"+Integer outputs: {len(node.outputs)}")
+            state_description_lines.append(f"outputs: {len(node.outputs)}")
         
-        # Create state with description (always has at least the Type field)
-        plantuml_lines.append(f"state {state_name} {{")
+        # Create state with description using PlantUML state syntax
+        state_label = node.name.replace('_', ' ')
+        plantuml_lines.append(f"state \"{state_label}\" as {state_name} {{")
         for desc_line in state_description_lines:
-            plantuml_lines.append(f"  {desc_line}")
+            plantuml_lines.append(f"  {state_name} : {desc_line}")
         plantuml_lines.append("}")
         
         plantuml_lines.append("")  # Add blank line for readability
